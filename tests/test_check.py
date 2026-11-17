@@ -70,6 +70,57 @@ def test_docstring_fails(repo):
     assert 'a.py:2: """Explain f."""' in result.stdout
 
 
+def test_tool_directives_pass(repo):
+    commit(
+        repo,
+        {
+            'a.py': (
+                '#!/usr/bin/env python3\n'
+                '# -*- coding: utf-8 -*-\n'
+                'import os  # noqa: F401\n'
+                'a: int = "1"  # type: ignore[assignment]\n'
+                'b = 1  # pyright: ignore\n'
+                'c = 1  # pylint: disable=invalid-name\n'
+                '# fmt: off\n'
+                'd = [1,2]\n'
+                '# fmt: on\n'
+                'e = [1,2]  # fmt: skip\n'
+                'if a:  # pragma: no cover\n'
+                '    pass\n'
+            ),
+            'b.tsx': (
+                '/// <reference types="node" />\n'
+                '// @ts-nocheck\n'
+                '/* eslint-disable no-console */\n'
+                '// eslint-disable-next-line no-undef\n'
+                'f(); // eslint-disable-line\n'
+                '/* eslint-enable no-console */\n'
+                '// @ts-expect-error\n'
+                'g();\n'
+                '// @ts-ignore\n'
+                'h();\n'
+                '// prettier-ignore\n'
+                'const i = [1,2];\n'
+                '// biome-ignore lint: generated\n'
+                'const j = <div>{/* prettier-ignore */}</div>;\n'
+            ),
+        },
+    )
+
+    result = ks_check(repo, '--all')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_prose_after_line_two_that_mentions_coding_fails(repo):
+    commit(repo, {'a.py': 'a = 1\nb = 2\n# coding: style matters here\n'})
+
+    result = ks_check(repo, '--all')
+
+    assert result.returncode == 1
+    assert 'a.py:3:' in result.stdout
+
+
 def test_comment_like_strings_pass(repo):
     commit(
         repo,

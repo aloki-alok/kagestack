@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -28,6 +29,16 @@ id: docstring
 language: python
 rule: {kind: string, inside: {kind: expression_statement}}
 """
+TOOL_DIRECTIVE = re.compile(
+    r'///\s*<reference'
+    r'|(#|//|/\*+)\s*('
+    r'noqa|type:\s*ignore|pyright:|pylint:|fmt:\s*(on|off|skip)|pragma: no cover'
+    r'|eslint-(disable|enable)|@ts-(expect-error|ignore|nocheck)'
+    r'|prettier-ignore|biome-ignore'
+    r')'
+)
+FILE_HEADER = re.compile(r'#!|#.*coding[:=]')
+FILE_HEADER_LINES = 2
 ADVICE = 'put the why in a name, a test, or the commit message, not in a comment.'
 EVERY_LINE = range(1, sys.maxsize)
 PATHS_PER_SCAN = 1000
@@ -67,10 +78,19 @@ def find_hits(paths):
             )
 
 
+def is_directive(hit):
+    in_header = hit.first_line <= FILE_HEADER_LINES
+    return bool(
+        TOOL_DIRECTIVE.match(hit.text) or in_header and FILE_HEADER.match(hit.text)
+    )
+
+
 def check(args):
     os.chdir(git('rev-parse', '--show-toplevel').strip())
     lines_to_check = every_file()
-    hits = sorted(find_hits(sorted(lines_to_check)))
+    hits = sorted(
+        hit for hit in find_hits(sorted(lines_to_check)) if not is_directive(hit)
+    )
     for hit in hits:
         print(f'{hit.path}:{hit.first_line}: {hit.text}')
     if hits:
