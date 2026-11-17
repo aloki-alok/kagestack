@@ -9,11 +9,9 @@ Read `${CLAUDE_PLUGIN_ROOT}/principles.md` before step 1.
 
 1. **Restate.** Write the goal, the smallest change that meets it, and how you will know it works.
    Done when "how you will know" is one outcome a user could observe.
-2. **Find what exists.** Search for code that already does this, and for the nearest sibling.
-   Judge the sibling. Good: follow it. Bad: design the right shape, move the sibling onto it, delete the old way in the same change. Only within what this feature touches.
+2. **Find what exists.** Search for code that already does this, and for the nearest sibling, then judge it.
    Done when you cite file:line for what exists, or list the searches that found nothing.
 3. **Name the data shape.** States, fields, and legal moves between states, before any logic.
-   No precedent, or two shapes look equal: build two or three small prototypes and compare.
    Done when the shape is written down.
 4. **Check the consequences.**
    - Every caller of what you change.

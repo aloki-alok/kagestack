@@ -7,7 +7,7 @@ Name each principle that changed a decision in your reply, with the choice it ch
 - **Delete first.** Remove dead code, stale paths and redundant guards before adding anything.
 - **Smallest change that solves it.** Before keeping a line, ask what breaks without it.
 - **Use what exists.** In order: this codebase, the standard library, the platform, an installed dependency. Write new code last.
-- **Judge the nearest example.** Follow it if it is good. If it is bad, fix the shape instead of copying it.
+- **Judge the nearest example.** Good: follow it. Bad: design the right shape, move the example onto it and delete the old way, only within what your change touches.
 - **Name the data shape first.** Rules live in one structure: a state machine, a typed model, a table. A second flag that must stay in sync with the first is the warning sign.
 - **Redesign for the new requirement.** Shape the code as if the requirement had been there from day one.
 - **One owner per piece of state, one way per job.**
@@ -19,7 +19,7 @@ Name each principle that changed a decision in your reply, with the choice it ch
 - **Three uses before an abstraction.** Readable duplication beats the wrong abstraction.
 - **A new dependency must be maintained and standard.** Say why it beats the plain option.
 - **Obvious over clever.**
-- **No precedent: build two or three prototypes** and compare before committing.
+- **No precedent, or two designs look equal: build two or three prototypes** and compare before committing.
 - **Build the tool, not the hand edit.** A script or codemod someone can rerun.
 - **Fewer, finished features over many rough ones.**
 
@@ -30,7 +30,8 @@ Name each principle that changed a decision in your reply, with the choice it ch
 - **Test behavior.** Break the behavior and the test fails. Restructure the internals and it still passes.
 - **Small units, each ending in a check.**
 - **Explain a number before reporting it:** what limits it, and whether the work ran inside the timed part.
-- **Two failed fixes on one premise: test the premise.**
+- **Two failed fixes on one premise: test the premise** with one run that comes out differently if it is false.
+  A third failure: a fresh agent takes over with the repro command and what was ruled out.
 
 ## Working
 

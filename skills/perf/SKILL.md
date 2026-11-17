@@ -19,7 +19,6 @@ Every change ties to a measurement. Reading the code is not measuring it.
 5. **Measure again,** alternating old and new runs so warmup and caches favor neither.
    Done when the gap is bigger than the run-to-run spread.
 6. **Check the number is real.**
-   - Did the work happen inside the timed part?
    - Did anything error?
    - Was each side set up the way production runs it?
    - Does the gain fit the limits? Removing a step that takes 10% of the run gives at most about 11%.

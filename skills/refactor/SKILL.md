@@ -16,8 +16,8 @@ ship this refactor first, then route the rest to `bug-fix` or `feature`.
    Done when you can say what disappears.
 3. **Prove what is dead before deleting it.** Search code, strings, config, templates, data files and anything loaded by name at runtime. No callers in code is not proof.
    Done when each deletion cites the searches that came up empty.
-4. **Delete first.** Dead code, one-caller wrappers, redundant guards and stale comments go in their own commit.
-5. **Move in small steps.** Each step keeps the pin green. Move every caller of an old API and delete it in the same change. Check each rename against the files, including strings.
+4. **Delete first,** in its own commit.
+5. **Move in small steps.** Each step keeps the pin green. Check each rename against the files, including strings.
    Done when the old shape has no callers left.
 6. **Prove nothing changed.** Run the pin, then the app on the real surface. For a large move, compare old and new output on the same input.
 7. **Show it was worth it.** Count what got smaller: lines, branches, files, flags. If nothing got easier to read, revert.

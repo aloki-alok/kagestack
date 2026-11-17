@@ -24,11 +24,6 @@ These move the symptom and keep the cause. Each needs the root-cause line to jus
 a null guard where the crash was, a caught and dropped error, a retry, sleep or longer timeout,
 a skipped or weakened test, a special case for the failing input.
 
-## Stuck
-
-- Two fixes failed on one premise: write the premise in one sentence, then run one experiment that comes out differently if it is false.
-- Third failure: hand off to a fresh agent with the repro command, the evidence, and the causes ruled out.
-
 ## Reply
 
 What the user would see, the root-cause line, the fix, then the red output and the green output pasted.
