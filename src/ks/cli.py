@@ -78,7 +78,7 @@ def default_base():
 
 def lines_added_since(base):
     merge_base = git('merge-base', base, 'HEAD').strip()
-    diff = ('diff', merge_base, '--find-renames', '--diff-filter=d', '--no-ext-diff')
+    diff = ('diff', merge_base, '--find-renames', '--no-ext-diff')
     paths = git(*diff, '--name-only', '-z').split('\0')[:-1]
     patches = FILE_PATCH.split(git(*diff, '--no-color', '-U0'))[1:]
     added = {}
@@ -156,5 +156,6 @@ def main():
     try:
         return check(args)
     except subprocess.CalledProcessError as error:
-        print(f'ks: {error.stderr.strip()}', file=sys.stderr)
+        reason = error.stderr.strip() or f'{" ".join(error.cmd[:2])} failed'
+        print(f'ks: {reason}', file=sys.stderr)
         return 2

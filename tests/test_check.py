@@ -119,6 +119,7 @@ def test_uncommitted_untracked_file_counts_as_new(feature_branch):
 
 
 def test_renamed_file_keeps_old_comments_passing(feature_branch):
+    git(feature_branch, 'config', 'diff.renames', 'false')
     git(feature_branch, 'mv', 'old.py', 'moved.py')
     git(feature_branch, 'commit', '-m', 'move')
 
@@ -135,6 +136,23 @@ def test_base_flag_sets_the_comparison_point(repo):
 
     assert result.returncode == 1
     assert 'a.py:2: # new' in result.stdout
+
+
+def test_unknown_base_exits_2(feature_branch):
+    result = ks_check(feature_branch, '--base', 'nope')
+
+    assert result.returncode == 2
+    assert 'nope' in result.stderr
+
+
+def test_base_with_no_shared_history_says_what_failed(feature_branch):
+    git(feature_branch, 'checkout', '--orphan', 'island')
+    commit(feature_branch, {'a.py': 'x = 1\n'})
+
+    result = ks_check(feature_branch, '--base', 'main')
+
+    assert result.returncode == 2
+    assert 'merge-base' in result.stderr
 
 
 def test_no_default_branch_asks_for_base(repo):
