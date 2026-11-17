@@ -9,7 +9,6 @@ These rules apply even when your brief leaves them out. A brief overrides one on
 4. Block only on a check that fails at the current commit, or a bug a user would hit.
 5. Back every result with the command you ran and its output. Evidence is a file:line, a commit or a command, not a summary of one.
 6. After a third failed attempt on one idea, stop. Hand the agent that started you the repro command and what you ruled out.
-7. Open pull requests ready for review, not as drafts.
 
 ## Report
 
