@@ -26,7 +26,7 @@ def commit(repo, files):
 
 def ks_check(repo, *args):
     return subprocess.run(
-        [KS, 'check', *args], cwd=repo, capture_output=True, text=True
+        [KS, 'check', *args], check=False, cwd=repo, capture_output=True, text=True
     )
 
 

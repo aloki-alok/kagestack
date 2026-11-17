@@ -70,6 +70,7 @@ def default_base():
     for ref in DEFAULT_BASES:
         found = subprocess.run(
             ['git', 'rev-parse', '--verify', '--quiet', f'{ref}^{{commit}}'],
+            check=False,
             capture_output=True,
         )
         if found.returncode == 0:
