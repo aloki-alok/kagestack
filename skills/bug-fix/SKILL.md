@@ -5,6 +5,8 @@ description: Fix a bug from a red repro to a proven fix. Use when something is b
 
 # Bug fix
 
+Read `${CLAUDE_PLUGIN_ROOT}/principles.md` before step 1.
+
 1. **Get it red.** Build one command that fails on the symptom the user sees, on the real surface. Fast, deterministic, unattended.
    Done when it goes red for that symptom twice in a row. A flaky bug must go red at least half the time.
 2. **Find the root cause.** Rank three to five candidate causes. Rule each out with a run or a log line until one survives.
