@@ -34,7 +34,7 @@ in claude code:
 
 ## status
 
-early. so far: the `bug-fix`, `feature`, `refactor` and `investigate` playbooks, the principles they follow, and worker rules every subagent gets when it starts.
+early. so far: the `bug-fix`, `feature`, `refactor`, `investigate`, `perf`, `eval` and `handoff` playbooks, the principles they follow, and worker rules every subagent gets when it starts.
 
 ## license
 
