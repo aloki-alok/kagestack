@@ -40,6 +40,113 @@ def repo(tmp_path, monkeypatch):
     return tmp_path
 
 
+@pytest.fixture
+def feature_branch(repo):
+    commit(repo, {'old.py': '# old\nx = 1\n', 'old.js': '/**\n * old\n */\n'})
+    git(repo, 'checkout', '-b', 'feature')
+    return repo
+
+
+def test_new_comment_fails(feature_branch):
+    commit(feature_branch, {'old.py': '# old\nx = 1\ny = 2  # new\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'old.py:3: # new' in result.stdout
+    assert '# old' not in result.stdout
+
+
+def test_old_comment_passes_by_default(feature_branch):
+    commit(feature_branch, {'old.py': '# old\nx = 1\ny = 2\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_added_line_that_looks_like_a_diff_header_is_code(feature_branch):
+    commit(feature_branch, {'old.py': '++ x\n# old\nx = 1\n# new\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'old.py:4: # new' in result.stdout
+
+
+def test_file_name_with_spaces(feature_branch):
+    commit(feature_branch, {'my file.py': 'x = 1\n# new\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'my file.py:2: # new' in result.stdout
+
+
+def test_non_utf8_change_does_not_stop_the_check(feature_branch):
+    (feature_branch / 'latin.py').write_bytes(b'x = "caf\xe9"\n')
+    commit(feature_branch, {'new.py': '# new\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1, result.stderr
+    assert 'new.py:1: # new' in result.stdout
+
+
+def test_all_catches_old_comment(feature_branch):
+    result = ks_check(feature_branch, '--all')
+
+    assert result.returncode == 1
+    assert 'old.py:1: # old' in result.stdout
+
+
+def test_line_added_inside_old_block_comment_fails(feature_branch):
+    commit(feature_branch, {'old.js': '/**\n * old\n * new\n */\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'old.js:1: /**' in result.stdout
+
+
+def test_uncommitted_untracked_file_counts_as_new(feature_branch):
+    write(feature_branch, {'fresh.py': 'x = 1\n# new\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'fresh.py:2: # new' in result.stdout
+
+
+def test_renamed_file_keeps_old_comments_passing(feature_branch):
+    git(feature_branch, 'mv', 'old.py', 'moved.py')
+    git(feature_branch, 'commit', '-m', 'move')
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_base_flag_sets_the_comparison_point(repo):
+    commit(repo, {'a.py': 'x = 1\n'})
+    commit(repo, {'a.py': 'x = 1\n# new\n'})
+
+    result = ks_check(repo, '--base', 'HEAD~1')
+
+    assert result.returncode == 1
+    assert 'a.py:2: # new' in result.stdout
+
+
+def test_no_default_branch_asks_for_base(repo):
+    git(repo, 'checkout', '-b', 'trunk')
+    commit(repo, {'a.py': 'x = 1\n'})
+
+    result = ks_check(repo)
+
+    assert result.returncode == 2
+    assert '--base' in result.stderr
+
+
 def test_all_reports_comments_in_every_language(repo):
     commit(
         repo,
