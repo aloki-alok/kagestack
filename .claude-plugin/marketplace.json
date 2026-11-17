@@ -1,0 +1,14 @@
+{
+  "name": "kagestack",
+  "owner": {
+    "name": "Alok Ranjan",
+    "url": "https://github.com/aloki-alok"
+  },
+  "plugins": [
+    {
+      "name": "kagestack",
+      "source": "./",
+      "description": "checks and skills so coding agents write clean code"
+    }
+  ]
+}
