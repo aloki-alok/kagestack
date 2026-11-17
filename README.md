@@ -2,18 +2,21 @@
 
 checks and skills so coding agents write clean code.
 
-agents copy what they see in a repo. so the fix for bad agent code is a better repo, not a longer prompt.
+## what it's for
 
-## the bar
+building features and fixing bugs with agents, cleanly, without babysitting them.
 
-nothing gets in unless:
+## what's in it
 
-1. it answers a mistake we saw twice.
-2. it sits at the highest level that works: structure, then a check, then a test. prose is last.
-3. every rule names what enforces it.
-4. every check is proven to fail on a real past mistake.
-5. nothing loads into a session unless a task needs it.
-6. this repo passes its own checks.
+- playbooks: how a job gets done. one per job, every step ends in proof.
+- checks: what stops a known mistake. added when we've seen it twice, proven on a real case.
+
+## rules for everything here
+
+1. highest level that works: structure, then a check, then a test. prose is last.
+2. every rule names what enforces it.
+3. nothing loads into a session unless a task needs it.
+4. this repo passes its own checks.
 
 ## install
 
@@ -26,11 +29,11 @@ in claude code:
 
 ## status
 
-foundation only. skills and checks land one at a time.
+foundation only. playbooks and checks land one at a time.
 
 ## credit
 
-the method is from [poteto](https://x.com/poteto)'s talk "all code is slop (except mine)" and her [pstack](https://github.com/cursor/plugins/tree/main/pstack).
+learned from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by poteto, [cursor/plugins](https://github.com/cursor/plugins), [posthog](https://github.com/PostHog/posthog), [next.js](https://github.com/vercel/next.js), [humanlayer](https://github.com/humanlayer/humanlayer) and [superpowers](https://github.com/obra/superpowers).
 
 ## license
 
