@@ -34,7 +34,7 @@ in claude code:
 
 ## status
 
-foundation only. playbooks and checks land one at a time.
+early. one playbook so far: `bug-fix`.
 
 ## license
 
