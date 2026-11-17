@@ -5,9 +5,9 @@ description: Fix a bug from a red repro to a proven fix. Use when something is b
 
 # Bug fix
 
-1. **Get it red.** Build one command that fails on the symptom the user sees, on the real surface.
-   Done when it goes red for that symptom twice in a row.
-2. **Find the root cause.** Rank the candidate causes. Rule each out with a run or a log line until one survives.
+1. **Get it red.** Build one command that fails on the symptom the user sees, on the real surface. Fast, deterministic, unattended.
+   Done when it goes red for that symptom twice in a row. A flaky bug must go red at least half the time.
+2. **Find the root cause.** Rank three to five candidate causes. Rule each out with a run or a log line until one survives.
    Done when you can write `Root cause: <X> because <Y>`, where Y is a mechanism you observed.
 3. **Fix at the cause.** List every caller of the code you will change. Fix where they all route through.
    Done when every line of the diff is justified by the root-cause line.
