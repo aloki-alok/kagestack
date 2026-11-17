@@ -212,8 +212,11 @@ def test_tool_directives_pass(repo):
                 'e = [1,2]  # fmt: skip\n'
                 'if a:  # pragma: no cover\n'
                 '    pass\n'
+                'import re  # NOQA\n'
             ),
             'b.tsx': (
+                '// @ts-check\n'
+                '/* eslint-env node */\n'
                 '/// <reference types="node" />\n'
                 '// @ts-nocheck\n'
                 '/* eslint-disable no-console */\n'
@@ -228,6 +231,7 @@ def test_tool_directives_pass(repo):
                 'const i = [1,2];\n'
                 '// biome-ignore lint: generated\n'
                 'const j = <div>{/* prettier-ignore */}</div>;\n'
+                '//# sourceMappingURL=b.js.map\n'
             ),
         },
     )

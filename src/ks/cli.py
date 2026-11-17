@@ -33,9 +33,10 @@ TOOL_DIRECTIVE = re.compile(
     r'///\s*<reference'
     r'|(#|//|/\*+)\s*('
     r'noqa|type:\s*ignore|pyright:|pylint:|fmt:\s*(on|off|skip)|pragma: no cover'
-    r'|eslint-(disable|enable)|@ts-(expect-error|ignore|nocheck)'
-    r'|prettier-ignore|biome-ignore'
-    r')'
+    r'|eslint-(disable|enable|env)|@ts-(check|expect-error|ignore|nocheck)'
+    r'|prettier-ignore|biome-ignore|#\s*sourceMappingURL='
+    r')',
+    re.IGNORECASE,
 )
 FILE_HEADER = re.compile(r'#!|#.*coding[:=]')
 FILE_HEADER_LINES = 2
