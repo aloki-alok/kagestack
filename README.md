@@ -9,7 +9,12 @@ building features and fixing bugs with agents, cleanly, without babysitting them
 ## what's in it
 
 - playbooks: how a job gets done. one per job, every step ends in proof.
-- checks: what stops a known mistake. added when we've seen it twice, proven on a real case.
+- checks: what stops a known mistake.
+
+## how it heals
+
+- a check fails: the agent fixes it and proves the fix. still stuck, a fresh agent takes over.
+- a mistake comes back: it becomes a new check, so it can't happen again.
 
 ## rules for everything here
 
