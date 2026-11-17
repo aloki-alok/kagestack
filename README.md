@@ -34,8 +34,8 @@ in claude code:
 
 ## status
 
-early. one playbook so far: `bug-fix`.
+early. so far: the `bug-fix` playbook, and worker rules every subagent gets when it starts.
 
 ## license
 
-MIT
+[MIT](LICENSE)
