@@ -33,7 +33,7 @@ foundation only. playbooks and checks land one at a time.
 
 ## credit
 
-learned from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by poteto, [cursor/plugins](https://github.com/cursor/plugins), [posthog](https://github.com/PostHog/posthog), [next.js](https://github.com/vercel/next.js), [humanlayer](https://github.com/humanlayer/humanlayer) and [superpowers](https://github.com/obra/superpowers).
+ideas from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by poteto, [cursor/plugins](https://github.com/cursor/plugins), [posthog](https://github.com/PostHog/posthog), [next.js](https://github.com/vercel/next.js), [humanlayer](https://github.com/humanlayer/humanlayer) and [superpowers](https://github.com/obra/superpowers).
 
 ## license
 
