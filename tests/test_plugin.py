@@ -26,6 +26,19 @@ def test_worker_hook_serves_worker_rules():
     assert context == (ROOT / 'hooks/worker.md').read_text()
 
 
+def test_session_hook_serves_the_playbook_routes():
+    hooks = json.loads((ROOT / 'hooks/hooks.json').read_text())['hooks']
+    served = json.loads((ROOT / 'hooks/session.json').read_text())
+
+    command = hooks['SessionStart'][0]['hooks'][0]['command']
+    assert command == 'cat "${CLAUDE_PLUGIN_ROOT}/hooks/session.json"'
+    assert served['hookSpecificOutput']['hookEventName'] == 'SessionStart'
+    context = served['hookSpecificOutput']['additionalContext']
+    assert context == (ROOT / 'hooks/session.md').read_text()
+    for skill in (ROOT / 'src/ks/skills').iterdir():
+        assert f'`kagestack:{skill.name}`' in context
+
+
 def test_every_skill_is_named_after_its_folder():
     for skill in (ROOT / 'src/ks/skills').iterdir():
         assert f'\nname: {skill.name}\n' in (skill / 'SKILL.md').read_text()
