@@ -1,0 +1,7 @@
+{
+  "prompt": "the csv export for nov 1 to nov 3 doesn't have nov 3 in it. fix it",
+  "skill": "bug-fix",
+  "pointer": "A bug, failure or wrong result: follow the kagestack:bug-fix skill.",
+  "remote": "https://github.com/acme/usage-reports.git",
+  "max_turns": 80
+}

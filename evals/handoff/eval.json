@@ -1,0 +1,7 @@
+{
+  "prompt": "i have to stop for today. leave this so someone else can pick it up tomorrow.",
+  "skill": "handoff",
+  "pointer": "Stopping work for another session to continue: follow the kagestack:handoff skill.",
+  "remote": "https://github.com/acme/campaigns.git",
+  "max_turns": 60
+}
