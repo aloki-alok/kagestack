@@ -1,7 +1,6 @@
 {
   "prompt": "add a way to pause a campaign so it stops dialing new calls, and resume it later. i'm away for a bit, just build it.",
   "skill": "feature",
-  "pointer": "A new feature or a change to what the product does: follow the kagestack:feature skill.",
   "remote": "https://github.com/acme/campaigns.git",
   "max_turns": 120
 }

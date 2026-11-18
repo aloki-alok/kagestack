@@ -16,6 +16,7 @@ from pathlib import Path
 EVALS = Path(__file__).resolve().parent
 REPO = EVALS.parent
 SERVER_FILES = ('issues.json', 'org-template.md', 'pr.json', 'comments.json')
+PLUGIN_FILES = ('.claude-plugin', 'hooks', 'skills', 'principles.md')
 TOOLS = [
     'Bash(git:*)',
     'Bash(gh:*)',
@@ -33,6 +34,9 @@ TOOLS = [
     'Bash(find:*)',
     'Bash(base64:*)',
     'Bash(pytest:*)',
+    'Bash(mkdir:*)',
+    'Bash(cp:*)',
+    'Bash(mktemp:*)',
     'Read',
     'Edit',
     'Write',
@@ -132,12 +136,18 @@ def git(cwd, *args):
 
 
 def plugin_at(ref, workdir):
+    dest = workdir / 'plugins' / (ref or 'current')
+    dest.mkdir(parents=True)
     if ref is None:
-        return REPO
-    dest = workdir / f'plugin-{ref}'
-    dest.mkdir()
+        for name in PLUGIN_FILES:
+            copy = shutil.copytree if (REPO / name).is_dir() else shutil.copy
+            copy(REPO / name, dest / name)
+        return dest
     archive = subprocess.run(
-        ['git', 'archive', ref], cwd=REPO, check=True, capture_output=True
+        ['git', 'archive', ref, *PLUGIN_FILES],
+        cwd=REPO,
+        check=True,
+        capture_output=True,
     )
     subprocess.run(['tar', '-x', '-C', dest], input=archive.stdout, check=True)
     return dest
@@ -179,6 +189,7 @@ def launch(spec, run, plugin):
         spec['prompt'],
         '--setting-sources',
         'project,local',
+        '--strict-mcp-config',
         '--permission-mode',
         'acceptEdits',
         '--max-turns',
@@ -190,12 +201,7 @@ def launch(spec, run, plugin):
         '--verbose',
     ]
     if plugin is not None:
-        command += [
-            '--plugin-dir',
-            str(plugin),
-            '--append-system-prompt',
-            spec['pointer'],
-        ]
+        command += ['--plugin-dir', str(plugin)]
     tools = run.root.parent / 'env' / 'bin'
     env = {**os.environ, 'PATH': f'{run.root / "bin"}:{tools}:{os.environ["PATH"]}'}
     with open(run.transcript, 'w') as transcript:
@@ -210,9 +216,11 @@ def launch(spec, run, plugin):
 
 
 def summary(run, skill):
-    fired, cost = False, 0.0
+    fired, cost, clean = False, 0.0, False
     for line in run.transcript.read_text().splitlines():
         event = json.loads(line) if line.startswith('{') else {}
+        if event.get('subtype') == 'init':
+            clean = not event.get('mcp_servers')
         for block in (
             event.get('message', {}).get('content', [])
             if event.get('type') == 'assistant'
@@ -222,7 +230,7 @@ def summary(run, skill):
                 fired = fired or block['input'].get('skill') == f'kagestack:{skill}'
         if event.get('type') == 'result':
             cost = event.get('total_cost_usd', 0.0)
-    return fired, cost
+    return fired, cost, clean
 
 
 def cell(key, value):
@@ -233,8 +241,13 @@ def report(eval_dir, spec, runs):
     score = runpy.run_path(str(eval_dir / 'score.py'))['score']
     rows = []
     for run in sorted(runs, key=lambda r: r.variant):
-        fired, cost = summary(run, spec['skill'])
-        facts = {**score(run), 'skill fired': fired, 'cost': cost}
+        fired, cost, clean = summary(run, spec['skill'])
+        facts = {
+            **score(run),
+            'skill fired': fired,
+            'no MCP servers': clean,
+            'cost': cost,
+        }
         rows.append((run.variant, facts))
         print(f'{run.variant:10} ' + ' | '.join(cell(k, v) for k, v in facts.items()))
     print()
@@ -294,7 +307,7 @@ def main():
         else ('baseline', None)
     )
     manifest, jobs = {}, []
-    for label, plugin in [base, ('kagestack', REPO)]:
+    for label, plugin in [base, ('kagestack', plugin_at(None, workdir))]:
         for _ in range(args.runs):
             name = secrets.token_hex(3)
             root = workdir / name

@@ -73,6 +73,28 @@ def server_file(name, default):
     return json.loads(path.read_text()) if path.exists() else default
 
 
+def org_repo(endpoint):
+    if not (OUT / 'org-template.md').exists():
+        return None
+    return {
+        'repos/acme/.github': {
+            'name': '.github',
+            'full_name': 'acme/.github',
+            'default_branch': 'main',
+        },
+        'repos/acme/.github/contents': [
+            {'name': '.github', 'path': '.github', 'type': 'dir'}
+        ],
+        'repos/acme/.github/contents/.github': [
+            {
+                'name': 'pull_request_template.md',
+                'path': '.github/pull_request_template.md',
+                'type': 'file',
+            }
+        ],
+    }.get(endpoint.strip('/'))
+
+
 def not_found():
     print('{"message":"Not Found","status":"404"}')
     print('gh: Not Found (HTTP 404)', file=sys.stderr)
@@ -198,14 +220,15 @@ def main():
     if command == 'auth status':
         print('github.com\n  ✓ Logged in to github.com account dev (keyring)')
     elif command == 'repo view':
+        viewed = args[2] if len(args) > 2 and '/' in args[2] else f'acme/{name}'
         print(
             json.dumps(
                 {
-                    'name': name,
-                    'nameWithOwner': f'acme/{name}',
+                    'name': viewed.rsplit('/', 1)[-1],
+                    'nameWithOwner': viewed,
                     'owner': {'login': 'acme'},
                     'defaultBranchRef': {'name': 'main'},
-                    'url': url,
+                    'url': f'https://github.com/{viewed}',
                 }
             )
         )
@@ -289,6 +312,10 @@ def main():
                     }
                 )
             )
+    elif args[:1] == ['api'] and (
+        listing := org_repo(next((a for a in args[1:] if 'repos/' in a), ''))
+    ):
+        print(json.dumps(listing))
     elif args[:1] == ['api']:
         not_found()
     else:

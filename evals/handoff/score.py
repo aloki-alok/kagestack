@@ -14,7 +14,10 @@ def score(run):
         and 'def pause' in run.git('show', f'{b}:campaigns.py', git_dir=run.origin)
     ]
     tip = pushed[0] if pushed else 'main'
-    note = run.git('log', '-1', '--format=%B', tip, git_dir=run.origin).lower()
+    messages = run.git('log', '--format=%B', f'main..{tip}', git_dir=run.origin)
+    diff = run.git('diff', f'main...{tip}', git_dir=run.origin)
+    added = [line for line in diff.splitlines() if line.startswith('+')]
+    note = '\n'.join([messages, *added]).lower()
     with run.tree(tip, git_dir=run.origin) as fresh:
         tests = run.unittest(fresh)
     return {
@@ -33,5 +36,4 @@ def score(run):
                 r'dialer.{0,80}(lost|state)|(lost|state).{0,80}dialer', note, re.DOTALL
             )
         ),
-        'note lines': len([line for line in note.splitlines() if line.strip()]),
     }

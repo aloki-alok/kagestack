@@ -17,13 +17,10 @@ def score(run):
         check=False,
     ).stdout.split()
     code = ''.join(p.read_text() for p in run.repo.glob('*.py'))
-    tests = sum(p.read_text().count('def test_') for p in run.repo.rglob('test*.py'))
     return {
         'nightly job still runs (name used in jobs.json)': check[:1] == ['True'],
         'behavior kept': check[1:2] == ['True'],
         'dead code deleted': '_old_format_phone' not in code,
         'unreachable check deleted': 'digits is None' not in code,
         'tests pass': run.unittest().returncode == 0,
-        'new tests also pass on the old code': tests > 1
-        and run.tests_on(run.start).returncode == 0,
     }

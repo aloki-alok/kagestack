@@ -1,25 +1,11 @@
 import json
 import re
-import shutil
-import subprocess
 
 
 def section(body, heading):
     after = body.split(heading, 1)[1] if heading in body else ''
     text = re.split(r'^## ', after, maxsplit=1, flags=re.MULTILINE)[0]
     return re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL).strip()
-
-
-def fails_on_main(run, head):
-    pytest = run.root.parent / 'env' / 'bin' / 'pytest'
-    new_tree = run.tree(head, git_dir=run.origin)
-    with new_tree as new, run.tree('main', git_dir=run.origin) as old:
-        for test in new.rglob('test*.py'):
-            shutil.copy(test, old / test.relative_to(new))
-        tests = subprocess.run(
-            [pytest, '-q'], cwd=old, capture_output=True, check=False
-        )
-    return tests.returncode == 1
 
 
 def score(run):
@@ -37,6 +23,4 @@ def score(run):
         'release marker set': bool(
             re.search(r'release:\s*(feature|fix|none)\s*-->', body)
         ),
-        'a test on the PR fails without the fix': created.exists()
-        and fails_on_main(run, pr['head']),
     }

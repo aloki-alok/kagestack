@@ -1,7 +1,6 @@
 {
   "prompt": "the campaigns page is slow, it takes over a second. make it faster.",
   "skill": "perf",
-  "pointer": "Something slow, or a speedup or regression claim: follow the kagestack:perf skill.",
   "remote": "https://github.com/acme/campaign-page.git",
   "max_turns": 80
 }

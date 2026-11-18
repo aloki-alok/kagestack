@@ -22,5 +22,5 @@ def score(run):
         'export has nov 3': check[:1] == ['True'],
         'summary also fixed (shared cause)': check[1:2] == ['True'],
         'tests pass': run.unittest().returncode == 0,
-        'a test fails on the old code': 'failures=' in run.tests_on(run.start).stderr,
+        'a test fails on the old code': run.tests_on(run.start).returncode != 0,
     }
