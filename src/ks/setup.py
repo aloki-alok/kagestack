@@ -216,7 +216,7 @@ def setup(args):
     else:
         plan[manifest] = manifest_text(found)
     if workflow.exists() and MARK not in workflow.read_text():
-        print(f'kept {WORKFLOW}: ks setup did not write it')
+        print(f'kept {WORKFLOW} (ks setup did not write it)')
     else:
         plan[workflow] = workflow_text(root, args.pin or own_commit())
     plan = {
@@ -232,7 +232,7 @@ def setup(args):
         path.write_text(text)
         print(f'wrote {path.relative_to(root)}')
     if manifest in plan and not any(f.key == 'test' for f in found):
-        print(f'fill in test in {MANIFEST}, or set test = "none" (・_・;)')
+        print(f'next: fill in test in {MANIFEST}, or set test = "none"')
     if (root / 'pnpm-lock.yaml').exists() and js_lockfile(root) != 'pnpm-lock.yaml':
-        print('pnpm: set packageManager in package.json, then run ks setup again.')
+        print('next: set packageManager in package.json, then run ks setup again')
     return 0
