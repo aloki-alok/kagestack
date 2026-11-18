@@ -34,6 +34,8 @@ writes `kagestack.toml` with the install, lint and test commands it finds in you
 
 `ks ci` runs those commands in order, then `ks check`. that is the CI job.
 
+`ks doctor` says whether the manifest is complete and whether CI runs a current release.
+
 ## ks check
 
 fails on comments in python, js, jsx, ts and tsx, docstrings included. tool directives like `noqa`, `eslint-disable` and `@ts-expect-error` pass.

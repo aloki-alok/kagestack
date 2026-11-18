@@ -10,7 +10,7 @@ import sysconfig
 from pathlib import Path
 from typing import NamedTuple
 
-from ks.setup import ManifestError, read_commands, setup
+from ks.setup import ManifestError, doctor, read_commands, setup
 from ks.tools import tools
 
 RULES = """
@@ -206,6 +206,10 @@ def main():
     setup_command.add_argument(
         '--pin', help='kagestack commit for CI to run (default: this release)'
     )
+    doctor_command = commands.add_parser(
+        'doctor', help='check the ks setup in this repo'
+    )
+    doctor_command.set_defaults(run=doctor)
     tools_command = commands.add_parser('tools', help='name faster modern tools')
     tools_command.set_defaults(run=tools)
     args = parser.parse_args()

@@ -20,6 +20,8 @@ JS_LOCKFILES = {
 }
 NPM_STUB_TEST = 'no test specified'
 PIN = re.compile(r'[0-9a-f]{40}')
+RELEASE = re.compile(r'v(\d+)\.(\d+)\.(\d+)')
+PINNED = re.compile(r'kagestack@(\S+) ks ci')
 CHECKOUT = 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1'
 SETUP_UV = 'astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3'
 SETUP_PNPM = 'pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1'
@@ -137,21 +139,37 @@ def workflow_text(root, pin):
     )
 
 
+def run(*command):
+    return subprocess.run(command, check=True, capture_output=True, text=True).stdout
+
+
+def repo_root():
+    return Path(run('git', 'rev-parse', '--show-toplevel').strip())
+
+
+def releases():
+    tags = {}
+    for line in run('git', 'ls-remote', '--tags', REPO).splitlines():
+        sha, ref = line.split('\t')
+        name = ref.removeprefix('refs/tags/')
+        if name.endswith('^{}'):
+            tags[name.removesuffix('^{}')] = sha
+        else:
+            tags.setdefault(name, sha)
+    return {tag: sha for tag, sha in tags.items() if RELEASE.fullmatch(tag)}
+
+
+def version(tag):
+    return tuple(int(part) for part in RELEASE.fullmatch(tag).groups())
+
+
 def own_commit():
     dist = importlib.metadata.distribution('kagestack')
     direct = json.loads(dist.read_text('direct_url.json') or '{}')
     if commit := direct.get('vcs_info', {}).get('commit_id'):
         return commit
     tag = f'v{dist.version}'
-    refs = subprocess.run(
-        ['git', 'ls-remote', '--tags', REPO, tag, f'{tag}^{{}}'],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.split()
-    shas = dict(zip(refs[1::2], refs[::2], strict=True))
-    commit = shas.get(f'refs/tags/{tag}^{{}}') or shas.get(f'refs/tags/{tag}')
-    if not commit:
+    if not (commit := releases().get(tag)):
         raise ManifestError(f'no release {tag} found. pass --pin <commit>.')
     return commit
 
@@ -187,14 +205,7 @@ def confirmed():
 
 
 def setup(args):
-    root = Path(
-        subprocess.run(
-            ['git', 'rev-parse', '--show-toplevel'],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-    )
+    root = repo_root()
     if args.pin and not PIN.fullmatch(args.pin):
         raise ManifestError('--pin takes a full 40-character commit hash.')
     found = draft(root)
@@ -225,3 +236,39 @@ def setup(args):
     if (root / 'pnpm-lock.yaml').exists() and js_lockfile(root) != 'pnpm-lock.yaml':
         print('pnpm: set packageManager in package.json, then run ks setup again.')
     return 0
+
+
+def pin_health(text):
+    pin = PINNED.search(text)
+    by_commit = {sha: tag for tag, sha in releases().items()}
+    tag = by_commit.get(pin[1]) if pin else None
+    if not tag:
+        found = pin[1] if pin else 'nothing'
+        return 'fail', f'{WORKFLOW} pins {found}, not a release. run ks setup again.'
+    newest = max(by_commit.values(), key=version)
+    if newest != tag:
+        return (
+            'warn',
+            f'{WORKFLOW} pinned to {tag}, {newest} is out. run ks setup again.',
+        )
+    return 'ok', f'{WORKFLOW} pinned to {tag}'
+
+
+def doctor(_args):
+    root = repo_root()
+    try:
+        commands = read_commands(root)
+        results = [('ok', f'{MANIFEST} runs {", ".join(commands)}')]
+    except ManifestError as error:
+        results = [('fail', str(error))]
+    workflow = root / WORKFLOW
+    text = workflow.read_text() if workflow.exists() else ''
+    if not text:
+        results.append(('fail', f'no {WORKFLOW}. run ks setup.'))
+    elif MARK not in text:
+        results.append(('skip', f'{WORKFLOW} not written by ks setup'))
+    else:
+        results.append(pin_health(text))
+    for level, message in results:
+        print(f'{level:5} {message}')
+    return 1 if any(level == 'fail' for level, _ in results) else 0
