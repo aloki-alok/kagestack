@@ -7,8 +7,10 @@ import shutil
 import subprocess
 import sys
 import sysconfig
+from pathlib import Path
 from typing import NamedTuple
 
+from ks.setup import ManifestError, read_commands, setup
 from ks.tools import tools
 
 RULES = """
@@ -43,7 +45,9 @@ TOOL_DIRECTIVE = re.compile(
 )
 FILE_HEADER = re.compile(r'#!|#.*coding[:=]')
 FILE_HEADER_LINES = 2
-ADVICE = '(・_・;) put the why in a name, a test, or the commit message, not in a comment.'
+ADVICE = (
+    '(・_・;) put the why in a name, a test, or the commit message, not in a comment.'
+)
 EVERY_LINE = range(1, sys.maxsize)
 DEFAULT_BASES = ('origin/HEAD', 'origin/main', 'origin/master', 'main', 'master')
 FILE_PATCH = re.compile(r'^diff --git ', re.MULTILINE)
@@ -134,7 +138,9 @@ def check(args):
     elif base := args.base or default_base():
         lines_to_check, removed = lines_added_since(base)
     else:
-        print('ks: no default branch found. pass --base <ref>. (・・?)', file=sys.stderr)
+        print(
+            'ks: no default branch found. pass --base <ref>. (・・?)', file=sys.stderr
+        )
         return 2
     hits = sorted(
         hit
@@ -155,6 +161,30 @@ def check(args):
     return 0
 
 
+def ci(args):
+    root = git('rev-parse', '--show-toplevel').strip()
+    commands = read_commands(Path(root))
+    for group in commands.values():
+        for command in group:
+            if command == 'none':
+                continue
+            print(f'$ {command}', flush=True)
+            run = subprocess.run(command, shell=True, check=False, cwd=root)
+            if run.returncode:
+                return run.returncode
+    return check(args)
+
+
+def add_scope(command):
+    scope = command.add_mutually_exclusive_group()
+    scope.add_argument(
+        '--all', action='store_true', help='report every comment, not only new ones'
+    )
+    scope.add_argument(
+        '--base', help='count lines added since this ref (default: the main branch)'
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(prog='ks')
     version = importlib.metadata.version('kagestack')
@@ -162,12 +192,19 @@ def main():
     commands = parser.add_subparsers(dest='command', required=True)
     check_command = commands.add_parser('check', help='fail on comments in code')
     check_command.set_defaults(run=check)
-    scope = check_command.add_mutually_exclusive_group()
-    scope.add_argument(
-        '--all', action='store_true', help='report every comment, not only new ones'
+    add_scope(check_command)
+    ci_command = commands.add_parser(
+        'ci', help='run the kagestack.toml commands, then ks check'
     )
-    scope.add_argument(
-        '--base', help='count lines added since this ref (default: the main branch)'
+    ci_command.set_defaults(run=ci)
+    add_scope(ci_command)
+    setup_command = commands.add_parser(
+        'setup', help='write kagestack.toml and the CI workflow'
+    )
+    setup_command.set_defaults(run=setup)
+    setup_command.add_argument('--yes', action='store_true', help='skip the prompt')
+    setup_command.add_argument(
+        '--pin', help='kagestack commit for CI to run (default: this release)'
     )
     tools_command = commands.add_parser('tools', help='name faster modern tools')
     tools_command.set_defaults(run=tools)
@@ -177,4 +214,7 @@ def main():
     except subprocess.CalledProcessError as error:
         reason = error.stderr.strip() or f'{" ".join(error.cmd[:2])} failed'
         print(f'ks: {reason}', file=sys.stderr)
+        return 2
+    except ManifestError as error:
+        print(f'ks: {error}', file=sys.stderr)
         return 2

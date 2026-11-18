@@ -1,0 +1,3 @@
+# ks ci runs these in order, then ks check.
+[commands]
+test = ["uv run --locked pytest"]
