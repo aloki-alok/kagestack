@@ -48,3 +48,40 @@ def test_modern_repo_has_nothing_to_swap(tmp_path):
     assert result.returncode == 0
     assert '→' not in result.stdout
     assert 'checked 2026-11-18' in result.stdout
+
+
+def test_broken_files_are_skipped_not_fatal(tmp_path):
+    (tmp_path / 'package.json').write_text('{bad')
+    (tmp_path / 'requirements.txt').write_bytes(b'flake8\n\xff\n')
+
+    result = ks_tools(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+    assert 'flake8 → ruff' in result.stdout
+
+
+def test_null_dependencies_are_empty(tmp_path):
+    (tmp_path / 'package.json').write_text('{"dependencies": null}')
+
+    result = ks_tools(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_words_and_lookalike_packages_are_not_tools(tmp_path):
+    pyproject = '[project]\ndescription = "not a black box"\ndependencies = []\n'
+    (tmp_path / 'pyproject.toml').write_text(pyproject)
+    (tmp_path / 'requirements.txt').write_text('mypy-extensions  # mypy later\n')
+    (tmp_path / 'uv.lock').write_text('')
+
+    result = ks_tools(tmp_path)
+
+    assert '→' not in result.stdout
+
+
+def test_poetry_project_without_a_lockfile_gets_uv(tmp_path):
+    (tmp_path / 'pyproject.toml').write_text('[tool.poetry]\nname = "x"\n')
+
+    result = ks_tools(tmp_path)
+
+    assert 'poetry → uv' in result.stdout

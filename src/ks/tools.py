@@ -1,5 +1,6 @@
 import json
 import re
+import tomllib
 from pathlib import Path
 from typing import NamedTuple
 
@@ -91,7 +92,14 @@ SWAPS = (
         'adopt, keep mypy in CI at first',
         py=('mypy',),
     ),
-    Swap('poetry', 'uv', '10 to 100x faster installs', 'adopt', files=('poetry.lock',)),
+    Swap(
+        'poetry',
+        'uv',
+        '10 to 100x faster installs',
+        'adopt',
+        py=('poetry',),
+        files=('poetry.lock',),
+    ),
     Swap(
         'pip',
         'uv',
@@ -110,21 +118,48 @@ SWAPS = (
 )
 
 
+REQUIREMENT = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]*')
+
+
+def read(path):
+    try:
+        return path.read_text(errors='replace')
+    except OSError:
+        return ''
+
+
 def js_dependencies(root):
-    package = root / 'package.json'
-    if not package.exists():
+    try:
+        data = json.loads(read(root / 'package.json') or '{}')
+    except ValueError:
         return set()
-    data = json.loads(package.read_text())
-    return {*data.get('dependencies', {}), *data.get('devDependencies', {})}
+    if not isinstance(data, dict):
+        return set()
+    names = set()
+    for key in ('dependencies', 'devDependencies'):
+        if isinstance(deps := data.get(key), dict):
+            names.update(deps)
+    return names
 
 
-def python_text(root):
-    files = [
-        root / 'pyproject.toml',
-        root / 'setup.cfg',
-        *root.glob('requirements*.txt'),
+def python_tools(root):
+    try:
+        pyproject = tomllib.loads(read(root / 'pyproject.toml'))
+    except tomllib.TOMLDecodeError:
+        pyproject = {}
+    project = pyproject.get('project', {})
+    groups = [
+        *project.get('optional-dependencies', {}).values(),
+        *pyproject.get('dependency-groups', {}).values(),
     ]
-    return '\n'.join(path.read_text() for path in files if path.exists())
+    lines = [*project.get('dependencies', []), *(d for g in groups for d in g)]
+    for path in root.glob('requirements*.txt'):
+        lines += read(path).splitlines()
+    names = {*pyproject.get('tool', {})}
+    for line in lines:
+        if isinstance(line, str) and (name := REQUIREMENT.match(line.strip())):
+            names.add(name[0])
+    return {name.lower() for name in names}
 
 
 def found(swap, root, js, py):
@@ -132,14 +167,14 @@ def found(swap, root, js, py):
         return False
     return (
         any(name in js for name in swap.js)
-        or any(re.search(rf'\b{re.escape(name)}\b', py) for name in swap.py)
+        or any(name in py for name in swap.py)
         or any((root / name).exists() for name in swap.files)
     )
 
 
 def tools(_args):
     root = Path.cwd()
-    js, py = js_dependencies(root), python_text(root)
+    js, py = js_dependencies(root), python_tools(root)
     swaps = [swap for swap in SWAPS if found(swap, root, js, py)]
     for swap in swaps:
         print(f'{swap.old} → {swap.new}: {swap.gain}. {swap.verdict}.')
