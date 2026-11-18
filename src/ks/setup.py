@@ -263,12 +263,17 @@ def doctor(_args):
         results = [('fail', str(error))]
     workflow = root / WORKFLOW
     text = workflow.read_text() if workflow.exists() else ''
-    if not text:
+    if not workflow.exists():
         results.append(('fail', f'no {WORKFLOW}. run ks setup.'))
+    elif not text.strip():
+        results.append(('fail', f'{WORKFLOW} is empty. run ks setup again.'))
     elif MARK not in text:
         results.append(('skip', f'{WORKFLOW} not written by ks setup'))
     else:
-        results.append(pin_health(text))
+        try:
+            results.append(pin_health(text))
+        except subprocess.CalledProcessError:
+            results.append(('warn', f'cannot reach {REPO} to check the pin'))
     for level, message in results:
         print(f'{level:5} {message}')
     return 1 if any(level == 'fail' for level, _ in results) else 0
