@@ -24,6 +24,16 @@ the checks, as a command line tool (python 3.11 or later):
 uv tool install git+https://github.com/aloki-alok/kagestack
 ```
 
+## ks setup
+
+```
+uvx --from git+https://github.com/aloki-alok/kagestack ks setup
+```
+
+writes `kagestack.toml` with the install, lint and test commands it finds in your repo, and a CI job pinned to this release. it shows both files and asks first. it never guesses a test command: if it finds none, you fill it in.
+
+`ks ci` runs those commands in order, then `ks check`. that is the CI job.
+
 ## ks check
 
 fails on comments in python, js, jsx, ts and tsx, docstrings included. tool directives like `noqa`, `eslint-disable` and `@ts-expect-error` pass.
