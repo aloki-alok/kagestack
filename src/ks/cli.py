@@ -83,15 +83,18 @@ def lines_added_since(base):
     diff = ('diff', merge_base, '--find-renames', '--no-ext-diff')
     paths = git(*diff, '--name-only', '-z').split('\0')[:-1]
     patches = FILE_PATCH.split(git(*diff, '--no-color', '-U0'))[1:]
-    added = {}
+    added, removed = {}, []
     for path, patch in zip(paths, patches, strict=True):
         added[path] = set()
         for hunk in HUNK.finditer(patch):
             start, count = int(hunk[1]), int(hunk[2] or 1)
             added[path].update(range(start, start + count))
+        if first_hunk := HUNK.search(patch):
+            body = patch[first_hunk.start() :].splitlines()
+            removed += [f'{line[1:].rstrip()}\n' for line in body if line[:1] == '-']
     untracked = git('ls-files', '-z', '--others', '--exclude-standard')
     added.update({path: EVERY_LINE for path in untracked.split('\0') if path})
-    return added
+    return added, ''.join(removed)
 
 
 def find_hits(paths):
@@ -106,7 +109,7 @@ def find_hits(paths):
                 path=match['file'],
                 first_line=match['range']['start']['line'] + 1,
                 last_line=match['range']['end']['line'] + 1,
-                text=match['text'].splitlines()[0],
+                text=match['text'],
             )
 
 
@@ -117,12 +120,16 @@ def is_directive(hit):
     )
 
 
+def was_moved(hit, removed):
+    return all(f'{line.strip()}\n' in removed for line in hit.text.splitlines())
+
+
 def check(args):
     os.chdir(git('rev-parse', '--show-toplevel').strip())
     if args.all:
-        lines_to_check = every_line_of_every_file()
+        lines_to_check, removed = every_line_of_every_file(), ''
     elif base := args.base or default_base():
-        lines_to_check = lines_added_since(base)
+        lines_to_check, removed = lines_added_since(base)
     else:
         print('ks: no default branch found. pass --base <ref>. (・・?)', file=sys.stderr)
         return 2
@@ -130,13 +137,14 @@ def check(args):
         hit
         for hit in find_hits(sorted(lines_to_check))
         if not is_directive(hit)
+        and not was_moved(hit, removed)
         and any(
             line in lines_to_check[hit.path]
             for line in range(hit.first_line, hit.last_line + 1)
         )
     )
     for hit in hits:
-        print(f'{hit.path}:{hit.first_line}: {hit.text}')
+        print(f'{hit.path}:{hit.first_line}: {hit.text.splitlines()[0]}')
     if hits:
         print(ADVICE)
         return 1

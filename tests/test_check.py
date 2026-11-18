@@ -65,6 +65,46 @@ def test_old_comment_passes_by_default(feature_branch):
     assert result.returncode == 0, result.stdout
 
 
+def test_comment_moved_to_a_new_file_passes(feature_branch):
+    commit(
+        feature_branch,
+        {'old.py': 'x = 1\n', 'split.py': 'def f():\n    # old\n    pass\n'},
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_old_comment_on_a_changed_line_passes(feature_branch):
+    commit(feature_branch, {'old.py': '# old\nx = 1\n', 'a.py': 'y = 1  # keep\n'})
+    git(feature_branch, 'checkout', '-b', 'edit')
+    commit(feature_branch, {'a.py': 'y = 2  # keep\n'})
+
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_new_comment_beside_a_moved_one_fails(feature_branch):
+    commit(feature_branch, {'old.py': 'x = 1\n', 'split.py': '# old\n# new\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'split.py:2: # new' in result.stdout
+    assert '# old' not in result.stdout
+
+
+def test_new_comment_inside_a_removed_one_fails(feature_branch):
+    commit(feature_branch, {'old.py': '# ol\nx = 1\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'old.py:1: # ol' in result.stdout
+
+
 def test_added_line_that_looks_like_a_diff_header_is_code(feature_branch):
     commit(feature_branch, {'old.py': '++ x\n# old\nx = 1\n# new\n'})
 
