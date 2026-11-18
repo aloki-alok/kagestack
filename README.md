@@ -33,19 +33,19 @@ building features and fixing bugs with agents, cleanly, without babysitting them
 
 ## does it help
 
-the same model on the same clean setup, with and without kagestack, 5 runs each. each task hides a trap. scoring is plain code that checks the outcome, never whether a playbook step was followed.
+the same model on the same clean setup (no personal config, no MCP servers), with and without the plugin, 5 runs each. each task hides a trap. scoring is plain code that checks the outcome, never whether a playbook step was followed. a win needs a gap of 4 runs or more.
 
-| playbook | trap | with kagestack | without | cost per run |
-|---|---|---|---|---|
-| `bug-fix` | the bug sits in a helper two pages share | both pages fixed 5/5 | 0/5, patched one caller | $0.28 vs $0.22 |
-| `pr` | the team template lives in the org's `.github` repo, and the branch's test passes without the fix | template filled 5/5, a test that fails without the fix 5/5 | 0/5, 0/5 | $0.33 vs $0.17 |
-| `handoff` | stop mid-task, with context only in the prompt and a token in an untracked `.env` | pushed with the full note 5/5, token never pushed | pushed 3/10 | $0.21 vs $0.20 |
-| `investigate` | the question has a wrong premise | right reason 5/5, cites file:line 5/5 | 5/5, 2/5 | $0.21 vs $0.13 |
-| `refactor` | a "dead" function is called by name from config | tie on behavior; leaves tests that pin the old behavior 5/5 | 0/5 | $0.39 vs $0.20 |
-| `perf` | the obvious N+1 query is 2% of the time | tie: 45x vs 47x faster | | $0.45 vs $0.23 |
-| `feature` | a morning job undoes a naive pause | tie: 5/5 | 5/5 | $0.61 vs $0.21 |
+| playbook | trap | with kagestack | without | verdict | cost per run |
+|---|---|---|---|---|---|
+| `bug-fix` | the bug sits in a helper two pages share | both pages fixed 5/5 | 0/5, found the cause and asked first | win | $0.21 vs $0.13 |
+| `pr` | the team template lives in the org's `.github` repo | template filled 5/5 | 0/5 | win, tuned on this task | $0.24 vs $0.10 |
+| `handoff` | stop mid-task, context only in the prompt, a token in an untracked `.env` | pushed with the full note 5/5 | 2/5 | tie, tuned on this task | $0.12 vs $0.13 |
+| `investigate` | the question has a wrong premise | right reason 5/5 | 5/5 | tie | $0.11 vs $0.09 |
+| `refactor` | a "dead" function is called by name from config | behavior kept 5/5 | 5/5 | tie | $0.29 vs $0.11 |
+| `perf` | the obvious N+1 query is 2% of the time | 45x faster | 95x faster, also fixed the N+1 in 4/5 | loss | $0.24 vs $0.18 |
+| `feature` | a morning job undoes a naive pause | works 5/5 | 5/5 | tie | $0.59 vs $0.13 |
 
-rerun a row with `python3 evals/run.py <folder>` (`bug-fix`, `pr`, `handoff`, `investigate`, `refactor`, `perf`, `feature-flags`). measured 2026-11-18. "with kagestack" means the plugin plus its one-line pointer.
+rerun a row with `python3 evals/run.py <folder>` (`bug-fix`, `pr`, `handoff`, `investigate`, `refactor`, `perf`, `feature-flags`). measured 2026-11-18. "tuned on this task" means the playbook was fixed after reading this task's runs, so it still needs a second task.
 
 not shipped: `babysit`. `evals/babysit` showed no win over a plain agent yet.
 
