@@ -267,4 +267,4 @@ def test_comment_like_strings_pass(repo):
     result = ks_check(repo, '--all')
 
     assert result.returncode == 0, result.stdout
-    assert result.stdout == ''
+    assert result.stdout == 'no new comments ✧(◕‿◕)✧\n'
