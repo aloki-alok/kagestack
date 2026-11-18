@@ -36,6 +36,10 @@ writes `kagestack.toml` with the install, lint and test commands it finds in you
 
 `ks doctor` says whether the manifest is complete and whether CI runs a current release.
 
+## review when a turn ends
+
+in an interactive claude code session, when a turn ends with new commits, a fresh agent reviews those commits once. claude fixes what it confirms before the turn ends. `claude -p` runs skip the review. `KS_REVIEW=0` turns it off, and `KS_REVIEW=1` turns it on where claude code can't tell whether the session is interactive.
+
 ## codex and opencode
 
 ```

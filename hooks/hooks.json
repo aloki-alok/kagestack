@@ -1,5 +1,5 @@
 {
-  "description": "give plain worker subagents the worker rules when they start",
+  "description": "give plain worker subagents the worker rules, and review new commits when an interactive turn ends",
   "hooks": {
     "SubagentStart": [
       {
@@ -8,6 +8,16 @@
           {
             "type": "command",
             "command": "cat \"${CLAUDE_PLUGIN_ROOT}/hooks/worker.json\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/review.sh\""
           }
         ]
       }

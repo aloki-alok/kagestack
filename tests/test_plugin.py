@@ -29,3 +29,11 @@ def test_worker_hook_serves_worker_rules():
 def test_every_skill_is_named_after_its_folder():
     for skill in (ROOT / 'src/ks/skills').iterdir():
         assert f'\nname: {skill.name}\n' in (skill / 'SKILL.md').read_text()
+
+
+def test_stop_hook_runs_the_review_script():
+    hooks = json.loads((ROOT / 'hooks/hooks.json').read_text())['hooks']
+
+    command = hooks['Stop'][0]['hooks'][0]['command']
+    assert command == 'sh "${CLAUDE_PLUGIN_ROOT}/hooks/review.sh"'
+    assert (ROOT / 'hooks/review.sh').is_file()
