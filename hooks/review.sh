@@ -1,5 +1,5 @@
 #!/bin/sh
-input=$(cat)
+input=$(tr -d '\n\r')
 case "${KS_REVIEW:-}" in
   0) exit 0 ;;
   1) ;;
@@ -20,7 +20,7 @@ printf '%s' "$input" | grep -q '"background_tasks" *: *\[ *[^] ]' && exit 0
 
 for ref in origin/HEAD origin/main origin/master main master; do
   if git rev-parse --verify --quiet "$ref^{commit}" > /dev/null; then
-    base=$(git merge-base "$ref" "$head") || exit 0
+    base=$(git merge-base "$ref" "$head")
     break
   fi
 done

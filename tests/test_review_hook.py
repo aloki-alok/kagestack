@@ -163,3 +163,23 @@ def test_history_with_no_common_base_is_silent(tmp_path):
     commit(repo, 'loose')
 
     assert stop(repo, env=ATTENDED) == ''
+
+
+def test_pretty_printed_input_is_read_the_same(tmp_path):
+    repo, _, _ = branch_with_work(tmp_path)
+    waiting = json.loads(DONE) | {'background_tasks': [{'id': 't1'}]}
+
+    assert stop(repo, json.dumps(waiting, indent=2), env=ATTENDED) == ''
+
+
+def test_merging_the_base_in_offers_only_branch_work(tmp_path):
+    repo, _, _ = branch_with_work(tmp_path)
+    stop(repo, env=ATTENDED)
+    git(repo, 'checkout', '-q', 'main')
+    upstream = commit(repo, 'upstream')
+    git(repo, 'update-ref', 'refs/remotes/origin/main', upstream)
+    git(repo, 'checkout', '-q', 'work')
+    git(repo, '-c', 'user.name=t', '-c', 'user.email=t@t', 'merge', '-q', 'main')
+    head = commit(repo, 'after')
+
+    assert f'{upstream[:12]}..{head[:12]}' in context(stop(repo, env=ATTENDED))

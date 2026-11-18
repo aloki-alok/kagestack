@@ -36,3 +36,4 @@ def test_stop_hook_runs_the_review_script():
 
     command = hooks['Stop'][0]['hooks'][0]['command']
     assert command == 'sh "${CLAUDE_PLUGIN_ROOT}/hooks/review.sh"'
+    assert (ROOT / 'hooks/review.sh').is_file()
