@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+import base64
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+OUT = Path(os.environ['EVAL_OUT'])
+EVAL = Path(os.environ['EVAL_DIR'])
+args = sys.argv[1:]
+line = ' '.join(args)
+with open(OUT / 'gh.log', 'a') as log:
+    log.write(line + '\n')
+
+
+def option(*names):
+    for i, arg in enumerate(args[:-1]):
+        if arg in names:
+            return args[i + 1]
+    return None
+
+
+def body():
+    if path := option('--body-file', '-F'):
+        return Path(path).read_text()
+    return option('--body', '-b')
+
+
+def append(name, record):
+    with open(OUT / name, 'a') as f:
+        f.write(json.dumps(record) + '\n')
+
+
+def repo_name():
+    url = subprocess.run(
+        ['git', 'remote', 'get-url', 'origin'],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    return url.rstrip('/').removesuffix('.git').rsplit('/', 1)[-1] or 'repo'
+
+
+def issues():
+    path = EVAL / 'issues.json'
+    return json.loads(path.read_text()) if path.exists() else []
+
+
+def not_found():
+    print('{"message":"Not Found","status":"404"}')
+    sys.exit(1)
+
+
+command = ' '.join(args[:2])
+name = repo_name()
+url = f'https://github.com/acme/{name}'
+if command == 'repo view':
+    print(
+        json.dumps(
+            {
+                'name': name,
+                'nameWithOwner': f'acme/{name}',
+                'owner': {'login': 'acme'},
+                'defaultBranchRef': {'name': 'main'},
+                'url': url,
+            }
+        )
+    )
+elif command == 'pr create':
+    (OUT / 'pr-create.txt').write_text(line)
+    if (text := body()) is not None:
+        (OUT / 'pr-body.md').write_text(text)
+    print(f'{url}/pull/12')
+elif command == 'pr edit':
+    if (text := body()) is not None:
+        (OUT / 'pr-body.md').write_text(text)
+    print(f'{url}/pull/12')
+elif command in ('pr view', 'pr list'):
+    created = OUT / 'pr-create.txt'
+    if not created.exists():
+        if command == 'pr list':
+            print('[]')
+            sys.exit(0)
+        print('no pull requests found for branch', file=sys.stderr)
+        sys.exit(1)
+    text = (OUT / 'pr-body.md').read_text() if (OUT / 'pr-body.md').exists() else ''
+    pr = {
+        'number': 12,
+        'url': f'{url}/pull/12',
+        'state': 'OPEN',
+        'isDraft': '--draft' in created.read_text(),
+        'body': text,
+    }
+    print(json.dumps([pr] if command == 'pr list' else pr))
+elif command in ('issue list', 'search issues'):
+    found = issues()
+    if '--json' in args:
+        print(json.dumps([{**i, 'url': f'{url}/issues/{i["number"]}'} for i in found]))
+    else:
+        for i in found:
+            print(f'{i["number"]}\t{i["state"]}\t{i["title"]}')
+elif command == 'issue view':
+    number = int(args[2].rsplit('/', 1)[-1].lstrip('#'))
+    match = [i for i in issues() if i['number'] == number] or not_found()
+    i = match[0]
+    print(
+        f'title:\t{i["title"]}\nstate:\t{i["state"]}\nnumber:\t{number}\n--\n{i["body"]}'
+    )
+elif command == 'issue create':
+    append('issues-created.jsonl', {'args': line, 'body': body()})
+    count = len((OUT / 'issues-created.jsonl').read_text().splitlines())
+    print(f'{url}/issues/{100 + count}')
+elif command == 'issue comment':
+    append('issue-comments.jsonl', {'args': line, 'body': body()})
+    print(f'{url}/issues/{args[2]}#issuecomment-1')
+elif args[:1] == ['api'] and 'pull_request_template' in line.lower():
+    template = EVAL / 'org-template.md'
+    if '/.github/contents' not in line or not template.exists():
+        not_found()
+    text = template.read_text()
+    encoded = base64.b64encode(text.encode()).decode()
+    if 'raw' in line:
+        print(text)
+    elif '--jq' in args:
+        print(encoded)
+    else:
+        print(
+            json.dumps(
+                {
+                    'name': 'pull_request_template.md',
+                    'encoding': 'base64',
+                    'content': encoded,
+                }
+            )
+        )
+elif args[:1] == ['api']:
+    not_found()
+else:
+    print('[]')
