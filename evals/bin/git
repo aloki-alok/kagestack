@@ -3,21 +3,20 @@ import os
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
-here = os.path.dirname(os.path.abspath(__file__))
+here = Path(__file__).resolve().parent
 path = os.pathsep.join(
-    p for p in os.environ['PATH'].split(os.pathsep) if os.path.abspath(p) != here
+    p for p in os.environ['PATH'].split(os.pathsep) if Path(p).resolve() != here
 )
 real = shutil.which('git', path=path)
-args = sys.argv[1:]
-remote, local = os.environ.get('EVAL_REMOTE'), os.environ.get('EVAL_REMOTE_PATH')
-if not (remote and local and set(args) & {'push', 'fetch', 'pull', 'ls-remote'}):
-    os.execv(real, [real, *args])
+remote = (here.parent / 'gh' / 'remote').read_text().strip()
+local = str(here.parent / 'origin.git')
 done = subprocess.run(
-    [real, '-c', f'url.{local}.insteadOf={remote}', *args],
+    [real, '-c', f'url.{local}.insteadOf={remote}', *sys.argv[1:]],
     capture_output=True,
-    text=True,
+    check=False,
 )
-sys.stdout.write(done.stdout.replace(local, remote))
-sys.stderr.write(done.stderr.replace(local, remote))
+sys.stdout.buffer.write(done.stdout.replace(local.encode(), remote.encode()))
+sys.stderr.buffer.write(done.stderr.replace(local.encode(), remote.encode()))
 sys.exit(done.returncode)
