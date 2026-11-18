@@ -1,12 +1,13 @@
 {
-  "description": "give every subagent the worker rules when it starts",
+  "description": "give plain worker subagents the worker rules when they start",
   "hooks": {
     "SubagentStart": [
       {
+        "matcher": "^(claude|general-purpose|Explore|Plan)$",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"import json, sys; print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SubagentStart', 'additionalContext': open(sys.argv[1]).read()}}))\" \"${CLAUDE_PLUGIN_ROOT}/hooks/worker.md\""
+            "command": "cat \"${CLAUDE_PLUGIN_ROOT}/hooks/worker.json\""
           }
         ]
       }

@@ -1,4 +1,5 @@
 import argparse
+import importlib.metadata
 import json
 import os
 import re
@@ -154,6 +155,8 @@ def check(args):
 
 def main():
     parser = argparse.ArgumentParser(prog='ks')
+    version = importlib.metadata.version('kagestack')
+    parser.add_argument('--version', action='version', version=f'ks {version}')
     commands = parser.add_subparsers(dest='command', required=True)
     check_command = commands.add_parser('check', help='fail on comments in code')
     scope = check_command.add_mutually_exclusive_group()
