@@ -56,6 +56,17 @@ after `bug-fix` learned to keep the errors and return types callers rely on, a s
 
 where it lost: on an Excel CSV bug, the plugin fixed the BOM but left CRLF line endings in 6/6 runs, and plain Claude fixed both in 6/6. the smallest fix again stopped short of the whole fault.
 
+after the principle became "fix every form of the fault", a third blind agent built 4 new tasks (80 runs, Sonnet 5.5 and Haiku 5.5, 5 per side):
+
+| | with kagestack | without |
+|---|---|---|
+| every hidden test passes | 39/40 | 37/40 (no real difference, p 0.62) |
+| refactor adds tests that lock behavior (Sonnet) | 5/5 | 0/5 |
+| bug fix leaves a test that catches the bug (Sonnet) | 5/5 | 3/5 |
+| cost per run | 1.4x | 1x |
+
+the whole-fault loss is gone, but no correctness win showed up either: 76 of 80 runs scored 100%, so these tasks are too small to show one. Haiku used a kagestack skill in 1 of 20 runs.
+
 ### author-built eval
 
 written by the plugin's author, so read it as a regression check. 5 runs per side, clean setup, outcome checks only.
