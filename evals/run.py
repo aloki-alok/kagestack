@@ -192,6 +192,8 @@ def launch(spec, run, plugin):
         '--strict-mcp-config',
         '--permission-mode',
         'acceptEdits',
+        '--model',
+        spec.get('model', 'sonnet'),
         '--max-turns',
         str(spec.get('max_turns', 80)),
         '--allowedTools',
