@@ -11,6 +11,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/principles.md` before step 1.
    Done when "how you will know" is one outcome a user could observe.
 2. **Find what exists.** Search for code that already does this, and for the nearest sibling, then judge it.
    Done when you cite file:line for what exists, or list the searches that found nothing.
+   If the change picks a new tool or library, run `scout` first.
 3. **Name the data shape.** States, fields, and legal moves between states, before any logic.
    Done when the shape is written down.
 4. **Check the consequences.**
