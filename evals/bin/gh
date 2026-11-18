@@ -49,6 +49,15 @@ def append(name, record):
         f.write(json.dumps(record) + '\n')
 
 
+def current_branch():
+    return subprocess.run(
+        ['git', 'branch', '--show-current'],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+
+
 def repo_name():
     url = subprocess.run(
         ['git', 'remote', 'get-url', 'origin'],
@@ -201,7 +210,20 @@ def main():
             )
         )
     elif command == 'pr create':
-        created.write_text(json.dumps(args))
+        head = (option('--head', '-H') or current_branch()).rsplit(':', 1)[-1]
+        pushed = subprocess.run(
+            ['git', '--git-dir', ORIGIN, 'rev-parse', '-q', '--verify', head],
+            capture_output=True,
+            check=False,
+        )
+        if pushed.returncode:
+            print(
+                'aborted: you must first push the current branch to a remote, '
+                'or use the --head flag',
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        created.write_text(json.dumps({'args': args, 'head': head}))
         if (text := body()) is not None:
             (OUT / 'pr-body.md').write_text(text)
         print(f'{url}/pull/12')
@@ -217,7 +239,7 @@ def main():
             print('no pull requests found for branch', file=sys.stderr)
             sys.exit(1)
         body_file = OUT / 'pr-body.md'
-        flags = json.loads(created.read_text())
+        flags = json.loads(created.read_text())['args']
         pr = {
             'number': 12,
             'url': f'{url}/pull/12',
