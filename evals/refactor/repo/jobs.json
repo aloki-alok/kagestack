@@ -1,0 +1,1 @@
+[{"name": "nightly-reminder", "handler": "send_sms_legacy", "to": "98-765-43210", "body": "your call summary is ready"}]

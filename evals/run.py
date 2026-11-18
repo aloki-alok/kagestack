@@ -44,6 +44,19 @@ class Run:
         log = self.out / 'gh.log'
         return log.read_text() if log.exists() else ''
 
+    @property
+    def reply(self):
+        for line in self.transcript.read_text().splitlines():
+            event = json.loads(line) if line.startswith('{') else {}
+            if event.get('type') == 'result':
+                return event.get('result') or ''
+        return ''
+
+    def git(self, *args):
+        return subprocess.run(
+            ['git', *args], cwd=self.repo, capture_output=True, text=True, check=False
+        ).stdout
+
     def read_lines(self, name):
         path = self.out / name
         return (
@@ -70,7 +83,9 @@ def plugin_at(ref, workdir):
 
 
 def build_repo(eval_dir, spec, dest):
-    shutil.copytree(eval_dir / 'repo', dest)
+    shutil.copytree(
+        eval_dir / 'repo', dest, ignore=shutil.ignore_patterns('__pycache__')
+    )
     git(dest, 'init', '-q', '-b', 'main')
     git(dest, 'config', 'user.name', 'dev')
     git(dest, 'config', 'user.email', 'dev@example.com')
@@ -193,10 +208,11 @@ def main():
             run.out.mkdir(parents=True)
             build_repo(eval_dir, spec, run.repo)
             runs.append((run, plugin))
-    print(f'{len(runs)} runs in {workdir}')
+    print(f'{len(runs)} runs in {workdir} (ง •̀_•́)ง')
     with ThreadPoolExecutor(max_workers=len(runs)) as pool:
         list(pool.map(lambda job: launch(eval_dir, spec, *job), runs))
     report(eval_dir, spec, [run for run, _ in runs])
+    print('done (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧')
 
 
 if __name__ == '__main__':

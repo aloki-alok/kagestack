@@ -1,0 +1,7 @@
+{
+  "prompt": "handlers.py is a mess, there's dead code and junk in there. clean it up.",
+  "skill": "refactor",
+  "pointer": "A cleanup, restructure, rename or dead-code removal: follow the kagestack:refactor skill.",
+  "remote": "https://github.com/acme/notify.git",
+  "max_turns": 80
+}
