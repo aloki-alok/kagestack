@@ -47,9 +47,7 @@ TOOL_DIRECTIVE = re.compile(
 )
 FILE_HEADER = re.compile(r'#!|#.*coding[:=]')
 FILE_HEADER_LINES = 2
-ADVICE = (
-    '(・_・;) put the why in a name, a test, or the commit message, not in a comment.'
-)
+ADVICE = 'put the why in a name, a test, or the commit message, not in a comment.'
 EVERY_LINE = range(1, sys.maxsize)
 DEFAULT_BASES = ('origin/HEAD', 'origin/main', 'origin/master', 'main', 'master')
 FILE_PATCH = re.compile(r'^diff --git ', re.MULTILINE)
@@ -140,9 +138,7 @@ def check(args):
     elif base := args.base or default_base():
         lines_to_check, removed = lines_added_since(base)
     else:
-        print(
-            'ks: no default branch found. pass --base <ref>. (・・?)', file=sys.stderr
-        )
+        print('ks: no default branch found. pass --base <ref>.', file=sys.stderr)
         return 2
     hits = sorted(
         hit
@@ -159,7 +155,7 @@ def check(args):
     if hits:
         print(ADVICE)
         return 1
-    print('no new comments ✧(◕‿◕)✧')
+    print('no new comments')
     return 0
 
 
@@ -188,39 +184,39 @@ def add_scope(command):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='ks')
+    parser = argparse.ArgumentParser(
+        prog='ks',
+        description='checks and playbooks that keep coding agents writing clean code',
+    )
     version = importlib.metadata.version('kagestack')
     parser.add_argument('--version', action='version', version=f'ks {version}')
-    commands = parser.add_subparsers(dest='command', required=True)
-    check_command = commands.add_parser('check', help='fail on comments in code')
-    check_command.set_defaults(run=check)
-    add_scope(check_command)
-    ci_command = commands.add_parser(
-        'ci', help='run the kagestack.toml commands, then ks check'
+    commands = parser.add_subparsers(
+        title='commands', metavar='<command>', required=True
     )
-    ci_command.set_defaults(run=ci)
-    add_scope(ci_command)
-    setup_command = commands.add_parser(
-        'setup', help='write kagestack.toml and the CI workflow'
+
+    def command(name, run, summary):
+        parsed = commands.add_parser(name, help=summary, description=summary)
+        parsed.set_defaults(run=run)
+        return parsed
+
+    setup_command = command(
+        'setup', setup, 'write kagestack.toml and a CI job pinned to this release'
     )
-    setup_command.set_defaults(run=setup)
-    setup_command.add_argument('--yes', action='store_true', help='skip the prompt')
     setup_command.add_argument(
-        '--pin', help='kagestack commit for CI to run (default: this release)'
+        '--yes', action='store_true', help='write without asking'
     )
-    doctor_command = commands.add_parser(
-        'doctor', help='check the ks setup in this repo'
+    setup_command.add_argument(
+        '--pin', metavar='COMMIT', help='kagestack commit for CI to run'
     )
-    doctor_command.set_defaults(run=doctor)
-    package_command = commands.add_parser(
-        'package', help='write the skills to .agents/skills for codex and opencode'
-    )
-    package_command.set_defaults(run=package)
-    package_command.add_argument(
-        '--check', action='store_true', help='fail if the written skills are stale'
-    )
-    tools_command = commands.add_parser('tools', help='name faster modern tools')
-    tools_command.set_defaults(run=tools)
+    add_scope(command('ci', ci, 'run the kagestack.toml commands, then ks check'))
+    add_scope(command('check', check, 'fail on comments this branch added'))
+    command('doctor', doctor, "check this repo's ks setup")
+    command(
+        'package',
+        package,
+        'write the playbooks to .agents/skills for codex and opencode',
+    ).add_argument('--check', action='store_true', help='fail if they are stale')
+    command('tools', tools, 'name faster, maintained replacements for old dev tools')
     args = parser.parse_args()
     try:
         return args.run(args)

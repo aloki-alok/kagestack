@@ -186,6 +186,6 @@ def tools(_args):
     for swap in swaps:
         print(f'{swap.old} → {swap.new}: {swap.gain}. {swap.verdict}.')
     if not swaps:
-        print('no older tools found ✧(◕‿◕)✧')
+        print('no older tools found')
     print(f'checked {CHECKED}. the scout playbook rechecks the list.')
     return 0

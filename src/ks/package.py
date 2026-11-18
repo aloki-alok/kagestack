@@ -51,9 +51,9 @@ def package(args):
         for path in stale:
             print(f'stale {OUT}/{path}')
         if stale:
-            print('run ks package (・_・;)')
+            print(f'{len(stale)} stale. run ks package')
             return 1
-        print(f'{OUT} is current ✧(◕‿◕)✧')
+        print(f'{OUT} is current')
         return 0
     for entry in out.glob(f'{PREFIX}*'):
         if is_folder(entry):
@@ -63,5 +63,6 @@ def package(args):
     for path, text in want.items():
         (out / path).parent.mkdir(parents=True, exist_ok=True)
         (out / path).write_text(text)
-    print(f'wrote {len(want)} files to {OUT} for codex and opencode')
+    folders = {path.split('/')[0] for path in want}
+    print(f'wrote {len(folders)} playbooks to {OUT}')
     return 0
