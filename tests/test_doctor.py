@@ -122,3 +122,15 @@ def test_empty_workflow_is_reported_as_empty(tmp_path):
 
     assert result.returncode == 1
     assert 'is empty' in result.stdout
+
+
+def test_stale_packaged_skills_warn(tmp_path):
+    repo = set_up(tmp_path, V0_16_0)
+    subprocess.run([KS, 'package'], check=True, cwd=repo, capture_output=True)
+    (repo / '.agents/skills/kagestack-pr/SKILL.md').write_text('old\n')
+
+    result = doctor(repo, env=OFFLINE)
+
+    assert result.returncode == 0
+    assert result.stdout.splitlines()[-1].startswith('warn')
+    assert 'ks package' in result.stdout
