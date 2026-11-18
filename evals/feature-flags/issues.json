@@ -1,0 +1,8 @@
+[
+  {
+    "number": 7,
+    "title": "start() restarts a finished campaign",
+    "state": "OPEN",
+    "body": "start() sets status to running with no check, so calling it on a done campaign dials everyone again."
+  }
+]
