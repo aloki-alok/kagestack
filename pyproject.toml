@@ -22,3 +22,6 @@ module-name = "ks"
 
 [tool.ruff.format]
 quote-style = "single"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
