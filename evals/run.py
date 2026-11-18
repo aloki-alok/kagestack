@@ -6,6 +6,7 @@ import secrets
 import shutil
 import statistics
 import subprocess
+import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -31,6 +32,7 @@ TOOLS = [
     'Bash(grep:*)',
     'Bash(find:*)',
     'Bash(base64:*)',
+    'Bash(pytest:*)',
     'Read',
     'Edit',
     'Write',
@@ -194,7 +196,8 @@ def launch(spec, run, plugin):
             '--append-system-prompt',
             spec['pointer'],
         ]
-    env = {**os.environ, 'PATH': f'{run.root / "bin"}:{os.environ["PATH"]}'}
+    tools = run.root.parent / 'env' / 'bin'
+    env = {**os.environ, 'PATH': f'{run.root / "bin"}:{tools}:{os.environ["PATH"]}'}
     with open(run.transcript, 'w') as transcript:
         subprocess.run(
             command,
@@ -278,6 +281,13 @@ def main():
         report(eval_dir, spec, finished_runs(args.score))
         return
     workdir = Path(tempfile.mkdtemp())
+    subprocess.run(
+        ['uv', 'venv', '-q', '--python', sys.executable, workdir / 'env'], check=True
+    )
+    subprocess.run(
+        ['uv', 'pip', 'install', '-q', '--python', workdir / 'env', 'pytest'],
+        check=True,
+    )
     base = (
         ('before', plugin_at(args.against, workdir))
         if args.against
