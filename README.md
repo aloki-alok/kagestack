@@ -32,9 +32,23 @@ in claude code:
 /plugin install kagestack@kagestack
 ```
 
+## ks
+
+the checks as a command line tool. needs python 3.11 or later.
+
+```
+uv tool install git+https://github.com/aloki-alok/kagestack
+```
+
+`ks check` fails on comments in code: python, js, jsx, ts and tsx. docstrings count. tool directives like `noqa`, `eslint-disable` and `@ts-expect-error` pass, because tools read them, not people.
+
+it checks only lines added since your branch left main, so an old repo can start today. `--base <ref>` picks another starting point. `--all` checks every line.
+
+each hit prints as `path:line: text`. put the why in a name, a test, or the commit message.
+
 ## status
 
-early. so far: the `bug-fix`, `feature`, `refactor`, `investigate`, `perf`, `eval`, `handoff` and `pr` playbooks, the principles they follow, and worker rules every subagent gets when it starts.
+early. so far: the `bug-fix`, `feature`, `refactor`, `investigate`, `perf`, `eval`, `handoff` and `pr` playbooks, the principles they follow, worker rules every subagent gets when it starts, and `ks check`.
 
 ## license
 
