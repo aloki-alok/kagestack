@@ -71,3 +71,33 @@ def test_rerun_removes_a_skill_that_no_longer_ships(tmp_path):
 
     assert not gone.exists()
     assert mine.exists()
+
+
+def test_stray_file_and_link_are_replaced_and_flagged(tmp_path):
+    repo = git_repo(tmp_path)
+    out = repo / '.agents/skills'
+    out.mkdir(parents=True)
+    (out / 'kagestack-x').write_text('')
+    (out / 'kagestack-link').symlink_to(tmp_path)
+
+    check = ks(repo, '--check')
+    result = ks(repo)
+
+    assert 'kagestack-x' in check.stdout
+    assert 'kagestack-link' in check.stdout
+    assert result.returncode == 0, result.stderr
+    assert not (out / 'kagestack-x').exists()
+    assert not (out / 'kagestack-link').is_symlink()
+
+
+def test_check_flags_an_empty_folder_and_principles_drift(tmp_path):
+    repo = git_repo(tmp_path)
+    ks(repo)
+    (repo / '.agents/skills/kagestack-empty').mkdir()
+    (repo / '.agents/skills/kagestack-feature/principles.md').write_text('old\n')
+
+    result = ks(repo, '--check')
+
+    assert result.returncode == 1
+    assert 'kagestack-empty' in result.stdout
+    assert 'kagestack-feature/principles.md' in result.stdout

@@ -23,14 +23,24 @@ def expected():
     return files
 
 
+def is_folder(entry):
+    return entry.is_dir() and not entry.is_symlink()
+
+
 def stale_files(out):
     want = expected()
+    folders = {path.split('/')[0] for path in want}
+    entries = sorted(out.glob(f'{PREFIX}*'))
+    stale = {e.name for e in entries if e.name not in folders or not is_folder(e)}
     have = {
-        str(path.relative_to(out)): path.read_text()
-        for path in out.glob(f'{PREFIX}*/**/*')
+        str(path.relative_to(out)): path.read_text(errors='replace')
+        for entry in entries
+        if is_folder(entry)
+        for path in entry.rglob('*')
         if path.is_file()
     }
-    return sorted(p for p in want.keys() | have.keys() if want.get(p) != have.get(p))
+    stale.update(p for p in want.keys() | have.keys() if want.get(p) != have.get(p))
+    return sorted(stale)
 
 
 def package(args):
@@ -45,8 +55,11 @@ def package(args):
             return 1
         print(f'{OUT} is current ✧(◕‿◕)✧')
         return 0
-    for folder in out.glob(f'{PREFIX}*'):
-        shutil.rmtree(folder)
+    for entry in out.glob(f'{PREFIX}*'):
+        if is_folder(entry):
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
     for path, text in want.items():
         (out / path).parent.mkdir(parents=True, exist_ok=True)
         (out / path).write_text(text)
