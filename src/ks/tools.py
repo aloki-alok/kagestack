@@ -128,13 +128,23 @@ def read(path):
         return ''
 
 
-def js_dependencies(root):
+def package_json(root):
     try:
         data = json.loads(read(root / 'package.json') or '{}')
     except ValueError:
-        return set()
-    if not isinstance(data, dict):
-        return set()
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def pyproject_toml(root):
+    try:
+        return tomllib.loads(read(root / 'pyproject.toml'))
+    except tomllib.TOMLDecodeError:
+        return {}
+
+
+def js_dependencies(root):
+    data = package_json(root)
     names = set()
     for key in ('dependencies', 'devDependencies'):
         if isinstance(deps := data.get(key), dict):
@@ -143,10 +153,7 @@ def js_dependencies(root):
 
 
 def python_tools(root):
-    try:
-        pyproject = tomllib.loads(read(root / 'pyproject.toml'))
-    except tomllib.TOMLDecodeError:
-        pyproject = {}
+    pyproject = pyproject_toml(root)
     project = pyproject.get('project', {})
     groups = [
         *project.get('optional-dependencies', {}).values(),
