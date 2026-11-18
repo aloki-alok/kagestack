@@ -1,6 +1,6 @@
 {
   "name": "kagestack",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "checks and skills so coding agents write clean code",
   "author": {
     "name": "Alok Ranjan",
@@ -8,5 +8,6 @@
   },
   "homepage": "https://github.com/aloki-alok/kagestack",
   "repository": "https://github.com/aloki-alok/kagestack",
-  "license": "MIT"
+  "license": "MIT",
+  "skills": "./src/ks/skills/"
 }

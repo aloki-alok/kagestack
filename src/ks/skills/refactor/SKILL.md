@@ -5,7 +5,7 @@ description: Change the structure of code without changing what it does. Use for
 
 # Refactor
 
-Read `${CLAUDE_PLUGIN_ROOT}/principles.md` before step 1.
+Read `${CLAUDE_PLUGIN_ROOT}/src/ks/principles.md` before step 1.
 
 Structure changes. Behavior does not. If you find a bug or a missing feature, stop and split it out:
 ship this refactor first, then route the rest to `bug-fix` or `feature`.

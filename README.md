@@ -36,6 +36,14 @@ writes `kagestack.toml` with the install, lint and test commands it finds in you
 
 `ks doctor` says whether the manifest is complete and whether CI runs a current release.
 
+## codex and opencode
+
+```
+uvx --from git+https://github.com/aloki-alok/kagestack ks package
+```
+
+writes the playbooks to `.agents/skills`, where codex and opencode find them. `ks package --check` fails when they are stale.
+
 ## ks check
 
 fails on comments in python, js, jsx, ts and tsx, docstrings included. tool directives like `noqa`, `eslint-disable` and `@ts-expect-error` pass.

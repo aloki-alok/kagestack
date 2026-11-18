@@ -10,7 +10,9 @@ import sysconfig
 from pathlib import Path
 from typing import NamedTuple
 
-from ks.setup import ManifestError, doctor, read_commands, setup
+from ks.doctor import doctor
+from ks.package import package
+from ks.setup import ManifestError, read_commands, setup
 from ks.tools import tools
 
 RULES = """
@@ -210,6 +212,13 @@ def main():
         'doctor', help='check the ks setup in this repo'
     )
     doctor_command.set_defaults(run=doctor)
+    package_command = commands.add_parser(
+        'package', help='write the skills to .agents/skills for codex and opencode'
+    )
+    package_command.set_defaults(run=package)
+    package_command.add_argument(
+        '--check', action='store_true', help='fail if the written skills are stale'
+    )
     tools_command = commands.add_parser('tools', help='name faster modern tools')
     tools_command.set_defaults(run=tools)
     args = parser.parse_args()

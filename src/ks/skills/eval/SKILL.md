@@ -5,7 +5,7 @@ description: Test whether a skill, playbook, prompt or rule change makes agents 
 
 # Eval
 
-Read `${CLAUDE_PLUGIN_ROOT}/principles.md` before step 1.
+Read `${CLAUDE_PLUGIN_ROOT}/src/ks/principles.md` before step 1.
 
 ## Who builds the test
 

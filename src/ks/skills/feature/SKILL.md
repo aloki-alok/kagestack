@@ -5,7 +5,7 @@ description: Build a new feature or change what the product does. Use when addin
 
 # Feature
 
-Read `${CLAUDE_PLUGIN_ROOT}/principles.md` before step 1.
+Read `${CLAUDE_PLUGIN_ROOT}/src/ks/principles.md` before step 1.
 
 1. **Restate.** Write the goal, the smallest change that meets it, and how you will know it works.
    Done when "how you will know" is one outcome a user could observe.

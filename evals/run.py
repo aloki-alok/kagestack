@@ -16,7 +16,7 @@ from pathlib import Path
 EVALS = Path(__file__).resolve().parent
 REPO = EVALS.parent
 SERVER_FILES = ('issues.json', 'org-template.md', 'pr.json', 'comments.json')
-PLUGIN_FILES = ('.claude-plugin', 'hooks', 'skills', 'principles.md')
+PLUGIN_FILES = ('.claude-plugin', 'hooks', 'src/ks/skills', 'src/ks/principles.md')
 TOOLS = [
     'Bash(git:*)',
     'Bash(gh:*)',
@@ -140,11 +140,12 @@ def plugin_at(ref, workdir):
     dest.mkdir(parents=True)
     if ref is None:
         for name in PLUGIN_FILES:
+            (dest / name).parent.mkdir(parents=True, exist_ok=True)
             copy = shutil.copytree if (REPO / name).is_dir() else shutil.copy
             copy(REPO / name, dest / name)
         return dest
     archive = subprocess.run(
-        ['git', 'archive', ref, *PLUGIN_FILES],
+        ['git', 'archive', ref],
         cwd=REPO,
         check=True,
         capture_output=True,
