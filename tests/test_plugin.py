@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 import sys
 import tomllib
@@ -35,8 +36,8 @@ def test_session_hook_serves_the_playbook_routes():
     assert served['hookSpecificOutput']['hookEventName'] == 'SessionStart'
     context = served['hookSpecificOutput']['additionalContext']
     assert context == (ROOT / 'hooks/session.md').read_text()
-    for skill in (ROOT / 'src/ks/skills').iterdir():
-        assert f'`kagestack:{skill.name}`' in context
+    skills = {skill.name for skill in (ROOT / 'src/ks/skills').iterdir()}
+    assert set(re.findall(r'`kagestack:([\w-]+)`', context)) == skills
 
 
 def test_every_skill_is_named_after_its_folder():
