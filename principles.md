@@ -9,7 +9,6 @@ Name each principle that changed a decision in your reply, with the choice it ch
 - **Use what exists.** In order: this codebase, the standard library, the platform, an installed dependency. Write new code last.
 - **Judge the nearest example.** Good: follow it. Bad: design the right shape, move the example onto it and delete the old way, only within what your change touches.
 - **Name the data shape first.** Rules live in one structure: a state machine, a typed model, a table. A second flag that must stay in sync with the first is the warning sign.
-- **Redesign for the new requirement.** Shape the code as if the requirement had been there from day one.
 - **One owner per piece of state, one way per job.**
 - **Validate at the boundary, trust inside.** Parse outside data into types where it enters.
 - **Make bad states impossible to write.**

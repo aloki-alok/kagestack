@@ -24,8 +24,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/principles.md` before step 1.
 7. **Prove it on the real app.** Drive the feature the way a user does. Save the output or a screenshot.
    Done when the proof comes from the final commit.
 8. **Fresh review.** An agent with none of your reasoning reviews the plan and the diff. Fix what it shows with a run.
-9. **Flag what you passed.** Bad code you saw and did not fix becomes an issue: what is wrong (file:line), the wrong lesson it teaches the next agent, the right shape, what it touches, and which work found it. Search open issues first. If one covers it, add to that one.
-   Done when every flag is a new or updated issue, linked in your reply.
+9. **Flag what you passed.** List bad code you saw and did not fix: file:line and the right shape, one line each. Open issues for them only if the user asks.
 
 ## Reply
 
