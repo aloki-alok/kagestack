@@ -23,6 +23,17 @@ building features and fixing bugs with agents, cleanly, without babysitting them
 3. nothing loads into a session unless a task needs it.
 4. this repo passes its own checks.
 
+## what enforces what
+
+| rule | enforced by |
+|---|---|
+| no comments in code | `ks check`, in CI on every pull request |
+| `pr`: fill the repo or org template, open ready | `evals/pr` |
+| `feature` step 9: search open issues, then file | `evals/feature-flags` |
+| `bug-fix`, `refactor`, `investigate`, `perf`, `handoff` | trial runs, not in `evals/` yet |
+| worker rules reach every subagent | the `SubagentStart` hook |
+| principles | the playbooks that load them |
+
 ## install
 
 in claude code:
