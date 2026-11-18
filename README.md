@@ -1,6 +1,6 @@
 # kagestack
 
-checks and skills so coding agents write clean code.
+checks and skills so coding agents write clean code. (｀・ω・´)ゞ
 
 ## what it's for
 
@@ -13,7 +13,7 @@ building features and fixing bugs with agents, cleanly, without babysitting them
 
 ## how it heals
 
-- a check fails: the agent fixes it and proves the fix. still stuck, a fresh agent takes over.
+- a check fails: the agent fixes it and proves the fix. still stuck, a fresh agent takes over. ٩(ˊᗜˋ*)و
 - a mistake comes back: it becomes a new check, so it can't happen again.
 
 ## rules for everything here
@@ -30,9 +30,15 @@ building features and fixing bugs with agents, cleanly, without babysitting them
 | no comments in code | `ks check`, in CI on every pull request |
 | `pr`: fill the repo or org template, open ready | `evals/pr` |
 | `feature` step 9: search open issues, then file | `evals/feature-flags` |
-| `bug-fix`, `refactor`, `investigate`, `perf`, `handoff` | trial runs, not in `evals/` yet |
+| `bug-fix`: failing test committed before the fix | `evals/bug-fix` |
+| `refactor`: pin behavior, keep names that config calls | `evals/refactor` |
+| `perf`: alternate old and new runs, same output | `evals/perf` |
+| `handoff`: proof command and next step in the note | `evals/handoff` |
+| `investigate`: cite file:line and the commit, change nothing | `evals/investigate` |
 | worker rules reach every subagent | the `SubagentStart` hook |
 | principles | the playbooks that load them |
+
+not shipped: `babysit`. `evals/babysit` showed no win over a plain agent yet.
 
 ## install
 
@@ -72,7 +78,7 @@ scoring is plain code: what the agent ran, what it made, whether the tests pass.
 
 ## status
 
-early. so far: the `bug-fix`, `feature`, `refactor`, `investigate`, `perf`, `eval`, `handoff` and `pr` playbooks, the principles they follow, worker rules every subagent gets when it starts, and `ks check`.
+early (・ω・). so far: the `bug-fix`, `feature`, `refactor`, `investigate`, `perf`, `eval`, `handoff` and `pr` playbooks, the principles they follow, worker rules every subagent gets when it starts, and `ks check`.
 
 ## license
 
