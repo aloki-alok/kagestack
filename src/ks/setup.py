@@ -1,5 +1,6 @@
 import importlib.metadata
 import json
+import re
 import subprocess
 import tomllib
 from pathlib import Path
@@ -18,6 +19,7 @@ JS_LOCKFILES = {
     'pnpm-lock.yaml': ('pnpm install --frozen-lockfile', 'pnpm'),
 }
 NPM_STUB_TEST = 'no test specified'
+PIN = re.compile(r'[0-9a-f]{40}')
 CHECKOUT = 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1'
 SETUP_UV = 'astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3'
 SETUP_PNPM = 'pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1'
@@ -34,17 +36,26 @@ class ManifestError(ValueError):
     pass
 
 
+def js_lockfile(root):
+    declared = str(package_json(root).get('packageManager', ''))
+    if (root / 'pnpm-lock.yaml').exists() and declared.startswith('pnpm@'):
+        return 'pnpm-lock.yaml'
+    if (root / 'package-lock.json').exists():
+        return 'package-lock.json'
+    return None
+
+
 def js_commands(root):
-    package = package_json(root)
-    scripts = package.get('scripts')
+    if not (lockfile := js_lockfile(root)):
+        return
+    install, run = JS_LOCKFILES[lockfile]
+    yield Found('install', install, lockfile)
+    scripts = package_json(root).get('scripts')
     scripts = scripts if isinstance(scripts, dict) else {}
-    for lockfile, (install, run) in JS_LOCKFILES.items():
-        if (root / lockfile).exists():
-            yield Found('install', install, lockfile)
-            for script, key in JS_SCRIPTS.items():
-                body = scripts.get(script)
-                if isinstance(body, str) and NPM_STUB_TEST not in body:
-                    yield Found(key, f'{run} {script}', 'package.json')
+    for script, key in JS_SCRIPTS.items():
+        body = scripts.get(script)
+        if isinstance(body, str) and NPM_STUB_TEST not in body:
+            yield Found(key, f'{run} {script}', 'package.json')
 
 
 def python_commands(root):
@@ -90,7 +101,7 @@ def manifest_text(found):
 def workflow_text(root, pin):
     node = []
     if (root / 'package.json').exists():
-        if (root / 'pnpm-lock.yaml').exists():
+        if js_lockfile(root) == 'pnpm-lock.yaml':
             node.append(f'      - uses: {SETUP_PNPM}')
         version_file = next(
             (n for n in ('.nvmrc', '.node-version') if (root / n).exists()), None
@@ -153,10 +164,14 @@ def read_commands(root):
         table = tomllib.loads(path.read_text()).get('commands', {})
     except tomllib.TOMLDecodeError as error:
         raise ManifestError(f'{MANIFEST}: {error}') from error
+    if not isinstance(table, dict):
+        raise ManifestError(f'{MANIFEST}: commands must be a table')
     commands = {}
     for key, value in table.items():
         value = [value] if isinstance(value, str) else value
-        if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        if not isinstance(value, list) or not all(
+            isinstance(v, str) and v.strip() for v in value
+        ):
             raise ManifestError(f'{MANIFEST}: {key} must be a command or a list')
         commands[key] = value
     if not commands.get('test'):
@@ -180,6 +195,8 @@ def setup(args):
             text=True,
         ).stdout.strip()
     )
+    if args.pin and not PIN.fullmatch(args.pin):
+        raise ManifestError('--pin takes a full 40-character commit hash.')
     found = draft(root)
     manifest, workflow = root / MANIFEST, root / WORKFLOW
     plan = {}
@@ -205,4 +222,6 @@ def setup(args):
         print(f'wrote {path.relative_to(root)}')
     if manifest in plan and not any(f.key == 'test' for f in found):
         print(f'fill in test in {MANIFEST}, or set test = "none" (・_・;)')
+    if (root / 'pnpm-lock.yaml').exists() and js_lockfile(root) != 'pnpm-lock.yaml':
+        print('pnpm: set packageManager in package.json, then run ks setup again.')
     return 0

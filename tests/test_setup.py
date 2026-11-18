@@ -102,6 +102,63 @@ def test_no_answer_writes_nothing(tmp_path):
 
     assert result.returncode == 1
     assert not (repo / 'kagestack.toml').exists()
+    assert not (repo / '.github').exists()
+
+
+def test_yes_at_the_prompt_writes_and_a_second_run_writes_nothing(tmp_path):
+    repo = git_repo(tmp_path)
+    setup(repo, stdin='y\n')
+
+    again = setup(repo)
+
+    assert (repo / 'kagestack.toml').exists()
+    assert again.returncode == 0
+    assert 'wrote' not in again.stdout
+
+
+def test_makefile_test_target_is_the_test_command(tmp_path):
+    repo = git_repo(tmp_path)
+    (repo / 'Makefile').write_text('build:\n\tcc x.c\ntest: build\n\t./x\n')
+
+    setup(repo, '--yes')
+
+    assert commands(repo) == {'test': ['make test']}
+
+
+def test_pnpm_without_a_pinned_version_is_left_to_you(tmp_path):
+    repo = git_repo(tmp_path)
+    (repo / 'pnpm-lock.yaml').write_text('')
+    (repo / 'package.json').write_text(json.dumps({'scripts': {'test': 'vitest'}}))
+
+    result = setup(repo, '--yes')
+
+    assert commands(repo) == {'test': []}
+    assert 'pnpm/action-setup' not in workflow(repo)
+    assert 'packageManager' in result.stdout
+
+
+def test_two_lockfiles_install_once_with_the_declared_manager(tmp_path):
+    repo = git_repo(tmp_path)
+    (repo / 'package-lock.json').write_text('{}')
+    (repo / 'pnpm-lock.yaml').write_text('')
+    package = {'packageManager': 'pnpm@12.21.0', 'scripts': {'test': 'vitest'}}
+    (repo / 'package.json').write_text(json.dumps(package))
+
+    setup(repo, '--yes')
+
+    assert commands(repo) == {
+        'install': ['pnpm install --frozen-lockfile'],
+        'test': ['pnpm test'],
+    }
+
+
+def test_pin_must_be_a_full_commit(tmp_path):
+    repo = git_repo(tmp_path)
+
+    result = ks(repo, 'setup', '--yes', '--pin', 'main')
+
+    assert result.returncode == 2
+    assert not (repo / 'kagestack.toml').exists()
 
 
 def test_rerun_keeps_your_manifest_and_a_workflow_it_did_not_write(tmp_path):
@@ -155,6 +212,26 @@ def test_ci_fails_on_an_empty_test(tmp_path):
 
     assert result.returncode == 2
     assert 'test = "none"' in result.stderr
+
+
+def test_ci_rejects_a_blank_command(tmp_path):
+    repo = git_repo(tmp_path)
+    (repo / 'kagestack.toml').write_text('[commands]\ninstall = " "\ntest = "none"\n')
+
+    result = ks(repo, 'ci', '--all')
+
+    assert result.returncode == 2
+    assert 'install' in result.stderr
+
+
+def test_ci_rejects_commands_that_are_not_a_table(tmp_path):
+    repo = git_repo(tmp_path)
+    (repo / 'kagestack.toml').write_text('commands = 3\n')
+
+    result = ks(repo, 'ci', '--all')
+
+    assert result.returncode == 2
+    assert result.stderr.startswith('ks: ')
 
 
 def test_ci_with_test_none_runs_ks_check(tmp_path):
