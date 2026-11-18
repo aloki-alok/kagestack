@@ -40,7 +40,7 @@ TOOL_DIRECTIVE = re.compile(
 )
 FILE_HEADER = re.compile(r'#!|#.*coding[:=]')
 FILE_HEADER_LINES = 2
-ADVICE = 'put the why in a name, a test, or the commit message, not in a comment.'
+ADVICE = '(・_・;) put the why in a name, a test, or the commit message, not in a comment.'
 EVERY_LINE = range(1, sys.maxsize)
 DEFAULT_BASES = ('origin/HEAD', 'origin/main', 'origin/master', 'main', 'master')
 FILE_PATCH = re.compile(r'^diff --git ', re.MULTILINE)
@@ -124,7 +124,7 @@ def check(args):
     elif base := args.base or default_base():
         lines_to_check = lines_added_since(base)
     else:
-        print('ks: no default branch found. pass --base <ref>.', file=sys.stderr)
+        print('ks: no default branch found. pass --base <ref>. (・・?)', file=sys.stderr)
         return 2
     hits = sorted(
         hit
@@ -140,6 +140,7 @@ def check(args):
     if hits:
         print(ADVICE)
         return 1
+    print('no new comments ✧(◕‿◕)✧')
     return 0
 
 
