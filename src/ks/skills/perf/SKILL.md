@@ -5,7 +5,7 @@ description: Make something measurably faster, or explain why it is slow. Use fo
 
 # Perf
 
-Read `${CLAUDE_PLUGIN_ROOT}/principles.md` before step 1.
+Read `${CLAUDE_PLUGIN_ROOT}/src/ks/principles.md` before step 1.
 
 Every change ties to a measurement. Reading the code is not measuring it.
 

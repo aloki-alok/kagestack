@@ -8,5 +8,6 @@
   },
   "homepage": "https://github.com/aloki-alok/kagestack",
   "repository": "https://github.com/aloki-alok/kagestack",
-  "license": "MIT"
+  "license": "MIT",
+  "skills": "./src/ks/skills/"
 }
