@@ -16,7 +16,9 @@ def fails_on_main(run, head):
     with new_tree as new, run.tree('main', git_dir=run.origin) as old:
         for test in new.rglob('test*.py'):
             shutil.copy(test, old / test.relative_to(new))
-        tests = subprocess.run([pytest, '-q'], cwd=old, capture_output=True, check=False)
+        tests = subprocess.run(
+            [pytest, '-q'], cwd=old, capture_output=True, check=False
+        )
     return tests.returncode == 1
 
 
