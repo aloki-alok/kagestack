@@ -44,7 +44,17 @@ a fresh agent that never saw this repo built its own tasks and hidden tests. it 
 | feature | 5 | 5/5 vs 5/5 | helps a little: more tests, judge preferred it 8 to 2 |
 | perf, investigate, handoff, a second bug | 4 to 5 | all equal | no difference |
 
-the plugin cost 1.4 to 2x as much per run. the tasks were small, so both sides hit the ceiling on correctness. `bug-fix` now keeps the errors and return types callers rely on, and still needs a new blind eval.
+the plugin cost 1.4 to 2x as much per run. the tasks were small, so both sides hit the ceiling on correctness.
+
+after `bug-fix` learned to keep the errors and return types callers rely on, a second blind agent built 8 new bugs (80 runs, Sonnet 5.5):
+
+| | with kagestack | without |
+|---|---|---|
+| every hidden test passes | 24/40 | 28/40 (no real difference, p 0.48) |
+| leaves a test that fails before the fix | 39/40 | 8/40 |
+| cost per run | $0.08 | $0.05 |
+
+where it lost: on an Excel CSV bug, the plugin fixed the BOM but left CRLF line endings in 6/6 runs, and plain Claude fixed both in 6/6. the smallest fix again stopped short of the whole fault.
 
 ### author-built eval
 
