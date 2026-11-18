@@ -191,6 +191,8 @@ def launch(spec, run, plugin):
         '--setting-sources',
         'project,local',
         '--strict-mcp-config',
+        '--settings',
+        json.dumps({'claudeMdExcludes': [f'{Path.home()}/.claude/**']}),
         '--permission-mode',
         'acceptEdits',
         '--model',

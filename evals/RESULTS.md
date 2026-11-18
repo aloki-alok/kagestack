@@ -1,6 +1,8 @@
 # eval results
 
-all runs on a clean setup: no personal settings, memory or connectors on either side.
+runs use no personal settings, memory or connectors on either side.
+
+the runs below, all before 2026-11-19, also loaded the author's personal instruction files on both sides: `--setting-sources` does not keep out `~/.claude/CLAUDE.md` or `~/.claude/rules`. those files ask for tests first, so "without" was not plain claude. `run.py` now excludes them.
 
 ## blind evals
 
