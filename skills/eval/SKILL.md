@@ -7,6 +7,17 @@ description: Test whether a skill, playbook, prompt or rule change makes agents 
 
 Read `${CLAUDE_PLUGIN_ROOT}/principles.md` before step 1.
 
+## Who builds the test
+
+If you wrote or changed the thing under test, a fresh agent designs and runs the whole eval blind. You only write its brief and read its report.
+- The brief holds: the goal in user terms, the thing's one-line purpose, how to run with it and without it, machine facts it can't find by looking, a budget and its own folder.
+- The brief leaves out: the source, the existing evals and results, your hunches and any method. It forbids reading the thing's files.
+- A change made after reading its report gets a new blind eval, not the same tasks.
+
+Use the steps below only when the thing can't run as a black box, or to rerun an existing task as a regression check. Label those results author-built.
+
+## Author-built evals
+
 An agent that knows it is being tested behaves differently, so the task must look real.
 
 1. **Write what winning means** before running anything: two to four outcomes a user would check, such as the bug gone, the page faster by the scorer's own clock, or the secret left out of the push. A fact that restates a playbook step only proves the agent read the playbook.
@@ -20,4 +31,4 @@ An agent that knows it is being tested behaves differently, so the task must loo
 
 ## Reply
 
-The table the runner printed, the decision, and the one fact it rests on.
+The results table, blind or author-built, the decision, and the one fact it rests on.
