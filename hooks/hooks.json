@@ -1,6 +1,16 @@
 {
-  "description": "give plain worker subagents the worker rules, and review new commits when an interactive turn ends",
+  "description": "point each session at the matching playbook, give plain worker subagents the worker rules, and review new commits when an interactive turn ends",
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"${CLAUDE_PLUGIN_ROOT}/hooks/session.json\""
+          }
+        ]
+      }
+    ],
     "SubagentStart": [
       {
         "matcher": "^(claude|general-purpose|Explore|Plan)$",
