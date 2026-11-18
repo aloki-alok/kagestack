@@ -1,7 +1,6 @@
 {
   "prompt": "why does the retry job skip calls before 9am? that was for the legal calling-hours rule, right?",
   "skill": "investigate",
-  "pointer": "A how, why or where question about code: follow the kagestack:investigate skill.",
   "remote": "https://github.com/acme/dialer.git",
   "max_turns": 40
 }

@@ -1,4 +1,5 @@
 set -e
+printf 'NORTHLINE_TOKEN=nl_live_8f2c41d09a7e\n' > .env
 cat >> campaigns.py <<'EOF'
 
 

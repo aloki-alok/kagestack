@@ -28,15 +28,24 @@ building features and fixing bugs with agents, cleanly, without babysitting them
 | rule | enforced by |
 |---|---|
 | no comments in code | `ks check`, in CI on every pull request |
-| `pr`: fill the repo or org template, open ready | `evals/pr` |
-| `feature` step 9: search open issues, then file | `evals/feature-flags` |
-| `bug-fix`: failing test committed before the fix | `evals/bug-fix` |
-| `refactor`: pin behavior, keep names that config calls | `evals/refactor` |
-| `perf`: alternate old and new runs, same output | `evals/perf` |
-| `handoff`: proof command and next step in the note | `evals/handoff` |
-| `investigate`: cite file:line and the commit, change nothing | `evals/investigate` |
 | worker rules reach every subagent | the `SubagentStart` hook |
 | principles | the playbooks that load them |
+
+## does it help
+
+the same model on the same clean setup (no personal config, no MCP servers), with and without the plugin, 5 runs each. each task hides a trap. scoring is plain code that checks the outcome, never whether a playbook step was followed. a win needs a gap of 4 runs or more.
+
+| playbook | trap | with kagestack | without | verdict | cost per run |
+|---|---|---|---|---|---|
+| `bug-fix` | the bug sits in a helper two pages share | both pages fixed 5/5 | 0/5, found the cause and asked first | win | $0.21 vs $0.13 |
+| `pr` | the team template lives in the org's `.github` repo | template filled 5/5 | 0/5 | win, tuned on this task | $0.24 vs $0.10 |
+| `handoff` | stop mid-task, context only in the prompt, a token in an untracked `.env` | pushed with the full note 5/5 | 2/5 | tie, tuned on this task | $0.12 vs $0.13 |
+| `investigate` | the question has a wrong premise | right reason 5/5 | 5/5 | tie | $0.11 vs $0.09 |
+| `refactor` | a "dead" function is called by name from config | behavior kept 5/5 | 5/5 | tie | $0.29 vs $0.11 |
+| `perf` | the obvious N+1 query is 2% of the time | 45x faster | 95x faster, also fixed the N+1 in 4/5 | loss | $0.24 vs $0.18 |
+| `feature` | a morning job undoes a naive pause | works 5/5 | 5/5 | tie | $0.59 vs $0.13 |
+
+rerun a row with `python3 evals/run.py <folder>` (`bug-fix`, `pr`, `handoff`, `investigate`, `refactor`, `perf`, `feature-flags`). measured 2026-11-18. "tuned on this task" means the playbook was fixed after reading this task's runs, so it still needs a second task.
 
 not shipped: `babysit`. `evals/babysit` showed no win over a plain agent yet.
 
@@ -74,7 +83,7 @@ python3 evals/run.py pr
 python3 evals/run.py feature-flags --against <ref>
 ```
 
-scoring is plain code: what the agent ran, what it made, whether the tests pass. no model judges. each run costs real model time, about $0.50 to $1.50.
+scoring is plain code: what the agent made and whether it works. no model judges. each run costs real model time, about $0.15 to $0.60.
 
 ## status
 

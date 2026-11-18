@@ -1,36 +1,61 @@
 #!/usr/bin/env python3
 import base64
+import contextlib
+import io
 import json
-import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-OUT = Path(os.environ['EVAL_OUT'])
-EVAL = Path(os.environ['EVAL_DIR'])
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / 'gh'
+ORIGIN = ROOT / 'origin.git'
 args = sys.argv[1:]
 line = ' '.join(args)
+command = ' '.join(args[:2])
 with open(OUT / 'gh.log', 'a') as log:
     log.write(line + '\n')
 
 
+def values(*names):
+    return [args[i + 1] for i, arg in enumerate(args[:-1]) if arg in names]
+
+
 def option(*names):
-    for i, arg in enumerate(args[:-1]):
-        if arg in names:
-            return args[i + 1]
-    return None
+    return next(iter(values(*names)), None)
+
+
+def read(path):
+    return sys.stdin.read() if path == '-' else Path(path).read_text()
 
 
 def body():
+    if args[:1] == ['api']:
+        if path := option('--input'):
+            data = read(path)
+            with contextlib.suppress(ValueError, AttributeError):
+                return json.loads(data).get('body', data)
+            return data
+        fields = values('-f', '-F', '--field', '--raw-field')
+        return dict(f.split('=', 1) for f in fields if '=' in f).get('body')
     if path := option('--body-file', '-F'):
-        return Path(path).read_text()
+        return read(path)
     return option('--body', '-b')
 
 
 def append(name, record):
     with open(OUT / name, 'a') as f:
         f.write(json.dumps(record) + '\n')
+
+
+def current_branch():
+    return subprocess.run(
+        ['git', 'branch', '--show-current'],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
 
 
 def repo_name():
@@ -43,26 +68,48 @@ def repo_name():
     return url.rstrip('/').removesuffix('.git').rsplit('/', 1)[-1] or 'repo'
 
 
-def issues():
-    path = EVAL / 'issues.json'
-    return json.loads(path.read_text()) if path.exists() else []
+def server_file(name, default):
+    path = OUT / name
+    return json.loads(path.read_text()) if path.exists() else default
+
+
+def org_repo(endpoint):
+    if not (OUT / 'org-template.md').exists():
+        return None
+    return {
+        'repos/acme/.github': {
+            'name': '.github',
+            'full_name': 'acme/.github',
+            'default_branch': 'main',
+        },
+        'repos/acme/.github/contents': [
+            {'name': '.github', 'path': '.github', 'type': 'dir'}
+        ],
+        'repos/acme/.github/contents/.github': [
+            {
+                'name': 'pull_request_template.md',
+                'path': '.github/pull_request_template.md',
+                'type': 'file',
+            }
+        ],
+    }.get(endpoint.strip('/'))
 
 
 def not_found():
     print('{"message":"Not Found","status":"404"}')
+    print('gh: Not Found (HTTP 404)', file=sys.stderr)
     sys.exit(1)
 
 
 def ci(pr):
-    remote = os.environ['EVAL_REMOTE_PATH']
     head = subprocess.run(
-        ['git', '--git-dir', remote, 'rev-parse', pr['headRefName']],
+        ['git', '--git-dir', ORIGIN, 'rev-parse', pr['headRefName']],
         capture_output=True,
         text=True,
         check=False,
     ).stdout.strip()
     archive = subprocess.run(
-        ['git', '--git-dir', remote, 'archive', head], capture_output=True, check=False
+        ['git', '--git-dir', ORIGIN, 'archive', head], capture_output=True, check=False
     )
     with tempfile.TemporaryDirectory() as tmp:
         subprocess.run(['tar', '-x', '-C', tmp], input=archive.stdout, check=False)
@@ -79,13 +126,9 @@ def ci(pr):
     return passed, log
 
 
-def review_comments():
-    path = EVAL / 'comments.json'
-    return json.loads(path.read_text()) if path.exists() else []
-
-
 def open_pr(pr):
     passed, log = ci(pr)
+    comments = server_file('comments.json', [])
     conclusion = 'SUCCESS' if passed else 'FAILURE'
     run_url = f'{url}/actions/runs/4242'
     if command == 'pr checks':
@@ -106,18 +149,22 @@ def open_pr(pr):
                     'mergeStateStatus': 'CLEAN' if passed else 'BLOCKED',
                     'reviewDecision': 'REVIEW_REQUIRED',
                     'statusCheckRollup': [
-                        {'name': 'test', 'conclusion': conclusion, 'detailsUrl': run_url}
+                        {
+                            'name': 'test',
+                            'conclusion': conclusion,
+                            'detailsUrl': run_url,
+                        }
                     ],
                     'comments': [
                         {'author': {'login': c['user']}, 'body': c['body']}
-                        for c in review_comments()
+                        for c in comments
                     ],
                 }
             )
         )
     elif command == 'pr view':
         print(f'{pr["title"]} acme/{name}#{pr["number"]}\nOpen\n\n{pr["body"]}\n')
-        for c in review_comments():
+        for c in comments:
             print(f'{c["user"]} ({c["path"]}:{c["line"]}):\n{c["body"]}\n')
     elif command == 'pr list':
         print(json.dumps([{**pr, 'url': f'{url}/pull/{pr["number"]}'}]))
@@ -128,12 +175,7 @@ def open_pr(pr):
     elif command == 'pr merge':
         (OUT / 'merge.txt').write_text(line)
         print(f'Merged pull request acme/{name}#{pr["number"]}')
-    elif command in ('pr comment', 'pr review') or (
-        args[:1] == ['api'] and ('POST' in args or '-f' in args or '--input' in args)
-    ):
-        append('replies.jsonl', {'args': line, 'body': body()})
-        print('{}')
-    elif args[:1] == ['api'] and 'graphql' in args:
+    elif args[:1] == ['api'] and 'graphql' in args and 'mutation' not in line:
         threads = [
             {
                 'id': f'T{c["id"]}',
@@ -150,106 +192,151 @@ def open_pr(pr):
                     ]
                 },
             }
-            for c in review_comments()
+            for c in comments
         ]
         pull = {'reviewThreads': {'nodes': threads}}
         print(json.dumps({'data': {'repository': {'pullRequest': pull}}}))
+    elif command in ('pr comment', 'pr review') or (
+        args[:1] == ['api']
+        and ('graphql' in args or {'POST', '-f', '-F', '--input'} & set(args))
+    ):
+        append('replies.jsonl', {'args': args, 'body': body()})
+        print('{"data": {}}' if 'graphql' in args else '{}')
     elif args[:1] == ['api'] and '/comments' in line:
-        print(json.dumps(review_comments()))
+        print(json.dumps(comments))
     else:
         return False
     return True
 
 
-command = ' '.join(args[:2])
-name = repo_name()
-url = f'https://github.com/acme/{name}'
-pr_file = EVAL / 'pr.json'
-if pr_file.exists() and (
-    args[:1] in (['pr'], ['run']) or args[:1] == ['api'] and 'template' not in line
-):
-    if open_pr(json.loads(pr_file.read_text())):
+def main():
+    pr = server_file('pr.json', None)
+    serves_pr = args[:1] in (['pr'], ['run']) or (
+        args[:1] == ['api'] and 'template' not in line
+    )
+    if pr and serves_pr and open_pr(pr):
         sys.exit(0)
-if command == 'repo view':
-    print(
-        json.dumps(
-            {
-                'name': name,
-                'nameWithOwner': f'acme/{name}',
-                'owner': {'login': 'acme'},
-                'defaultBranchRef': {'name': 'main'},
-                'url': url,
-            }
-        )
-    )
-elif command == 'pr create':
-    (OUT / 'pr-create.txt').write_text(line)
-    if (text := body()) is not None:
-        (OUT / 'pr-body.md').write_text(text)
-    print(f'{url}/pull/12')
-elif command == 'pr edit':
-    if (text := body()) is not None:
-        (OUT / 'pr-body.md').write_text(text)
-    print(f'{url}/pull/12')
-elif command in ('pr view', 'pr list'):
-    created = OUT / 'pr-create.txt'
-    if not created.exists():
-        if command == 'pr list':
-            print('[]')
-            sys.exit(0)
-        print('no pull requests found for branch', file=sys.stderr)
-        sys.exit(1)
-    text = (OUT / 'pr-body.md').read_text() if (OUT / 'pr-body.md').exists() else ''
-    pr = {
-        'number': 12,
-        'url': f'{url}/pull/12',
-        'state': 'OPEN',
-        'isDraft': '--draft' in created.read_text(),
-        'body': text,
-    }
-    print(json.dumps([pr] if command == 'pr list' else pr))
-elif command in ('issue list', 'search issues'):
-    found = issues()
-    if '--json' in args:
-        print(json.dumps([{**i, 'url': f'{url}/issues/{i["number"]}'} for i in found]))
-    else:
-        for i in found:
-            print(f'{i["number"]}\t{i["state"]}\t{i["title"]}')
-elif command == 'issue view':
-    number = int(args[2].rsplit('/', 1)[-1].lstrip('#'))
-    match = [i for i in issues() if i['number'] == number] or not_found()
-    i = match[0]
-    print(
-        f'title:\t{i["title"]}\nstate:\t{i["state"]}\nnumber:\t{number}\n--\n{i["body"]}'
-    )
-elif command == 'issue create':
-    append('issues-created.jsonl', {'args': line, 'body': body()})
-    count = len((OUT / 'issues-created.jsonl').read_text().splitlines())
-    print(f'{url}/issues/{100 + count}')
-elif command == 'issue comment':
-    append('issue-comments.jsonl', {'args': line, 'body': body()})
-    print(f'{url}/issues/{args[2]}#issuecomment-1')
-elif args[:1] == ['api'] and 'pull_request_template' in line.lower():
-    template = EVAL / 'org-template.md'
-    if '/.github/contents' not in line or not template.exists():
-        not_found()
-    text = template.read_text()
-    encoded = base64.b64encode(text.encode()).decode()
-    if 'raw' in line:
-        print(text)
-    elif '--jq' in args:
-        print(encoded)
-    else:
+    created = OUT / 'pr-create.json'
+    if command == 'auth status':
+        print('github.com\n  ✓ Logged in to github.com account dev (keyring)')
+    elif command == 'repo view':
+        viewed = args[2] if len(args) > 2 and '/' in args[2] else f'acme/{name}'
         print(
             json.dumps(
                 {
-                    'name': 'pull_request_template.md',
-                    'encoding': 'base64',
-                    'content': encoded,
+                    'name': viewed.rsplit('/', 1)[-1],
+                    'nameWithOwner': viewed,
+                    'owner': {'login': 'acme'},
+                    'defaultBranchRef': {'name': 'main'},
+                    'url': f'https://github.com/{viewed}',
                 }
             )
         )
-elif args[:1] == ['api']:
-    not_found()
-else:
-    print('[]')
+    elif command == 'pr create':
+        head = (option('--head', '-H') or current_branch()).rsplit(':', 1)[-1]
+        pushed = subprocess.run(
+            ['git', '--git-dir', ORIGIN, 'rev-parse', '-q', '--verify', head],
+            capture_output=True,
+            check=False,
+        )
+        if pushed.returncode:
+            print(
+                'aborted: you must first push the current branch to a remote, '
+                'or use the --head flag',
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        created.write_text(json.dumps({'args': args, 'head': head}))
+        if (text := body()) is not None:
+            (OUT / 'pr-body.md').write_text(text)
+        print(f'{url}/pull/12')
+    elif command == 'pr edit':
+        if (text := body()) is not None:
+            (OUT / 'pr-body.md').write_text(text)
+        print(f'{url}/pull/12')
+    elif command in ('pr view', 'pr list'):
+        if not created.exists():
+            if command == 'pr list':
+                print('[]')
+                sys.exit(0)
+            print('no pull requests found for branch', file=sys.stderr)
+            sys.exit(1)
+        body_file = OUT / 'pr-body.md'
+        flags = json.loads(created.read_text())['args']
+        pr = {
+            'number': 12,
+            'url': f'{url}/pull/12',
+            'state': 'OPEN',
+            'isDraft': '--draft' in flags or '-d' in flags,
+            'body': body_file.read_text() if body_file.exists() else '',
+        }
+        print(json.dumps([pr] if command == 'pr list' else pr))
+    elif command in ('issue list', 'search issues'):
+        found = server_file('issues.json', [])
+        if '--json' in args:
+            print(
+                json.dumps([{**i, 'url': f'{url}/issues/{i["number"]}'} for i in found])
+            )
+        else:
+            for i in found:
+                print(f'{i["number"]}\t{i["state"]}\t{i["title"]}')
+    elif command == 'issue view':
+        number = int(args[2].rsplit('/', 1)[-1].lstrip('#'))
+        match = [i for i in server_file('issues.json', []) if i['number'] == number]
+        i = match[0] if match else not_found()
+        print(
+            f'title:\t{i["title"]}\nstate:\t{i["state"]}\nnumber:\t{number}\n--\n{i["body"]}'
+        )
+    elif command == 'issue create':
+        append('issues-created.jsonl', {'args': args, 'body': body()})
+        count = len((OUT / 'issues-created.jsonl').read_text().splitlines())
+        print(f'{url}/issues/{100 + count}')
+    elif command == 'issue comment':
+        append('issue-comments.jsonl', {'args': args, 'body': body()})
+        print(f'{url}/issues/{args[2]}#issuecomment-1')
+    elif args[:1] == ['api'] and 'pull_request_template' in line.lower():
+        template = OUT / 'org-template.md'
+        if '/.github/contents' not in line or not template.exists():
+            not_found()
+        text = template.read_text()
+        if 'raw' in line:
+            print(text)
+        else:
+            encoded = base64.b64encode(text.encode()).decode()
+            print(
+                json.dumps(
+                    {
+                        'name': 'pull_request_template.md',
+                        'encoding': 'base64',
+                        'content': encoded,
+                    }
+                )
+            )
+    elif args[:1] == ['api'] and (
+        listing := org_repo(next((a for a in args[1:] if 'repos/' in a), ''))
+    ):
+        print(json.dumps(listing))
+    elif args[:1] == ['api']:
+        not_found()
+    else:
+        print('[]')
+
+
+name = repo_name()
+url = f'https://github.com/acme/{name}'
+buffer = io.StringIO()
+code = 0
+with contextlib.redirect_stdout(buffer):
+    try:
+        main()
+    except SystemExit as stop:
+        code = stop.code or 0
+text = buffer.getvalue()
+if (expr := option('--jq', '-q')) and code == 0 and text.strip():
+    done = subprocess.run(
+        ['jq', '-r', expr], input=text, capture_output=True, text=True, check=False
+    )
+    text, code = done.stdout, done.returncode
+    sys.stderr.write(done.stderr)
+sys.stdout.write(text)
+sys.exit(code)

@@ -1,7 +1,6 @@
 {
   "prompt": "open a pr for this branch",
   "skill": "pr",
-  "pointer": "Opening a pull request: follow the kagestack:pr skill.",
   "remote": "https://github.com/acme/invoices.git",
   "max_turns": 60
 }
