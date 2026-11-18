@@ -6,6 +6,7 @@ description: Open a pull request a reviewer can read in a minute. Use when openi
 # Pull request
 
 1. **Clean the branch.** Only this change, rebased on the base, in small commits that each pass the checks.
+   If no test fails without the change, add one that does, as its own commit.
    Done when the repo's checks and tests pass at the last commit.
 2. **Title:** `type(scope): subject`, naming the real symbol the change is about.
 3. **Find the template.** The repo's own `.github/pull_request_template.md`, else the org default:
