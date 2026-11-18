@@ -28,15 +28,24 @@ building features and fixing bugs with agents, cleanly, without babysitting them
 | rule | enforced by |
 |---|---|
 | no comments in code | `ks check`, in CI on every pull request |
-| `pr`: fill the repo or org template, open ready | `evals/pr` |
-| `feature` step 9: search open issues, then file | `evals/feature-flags` |
-| `bug-fix`: failing test committed before the fix | `evals/bug-fix` |
-| `refactor`: pin behavior, keep names that config calls | `evals/refactor` |
-| `perf`: alternate old and new runs, same output | `evals/perf` |
-| `handoff`: proof command and next step in the note | `evals/handoff` |
-| `investigate`: cite file:line and the commit, change nothing | `evals/investigate` |
 | worker rules reach every subagent | the `SubagentStart` hook |
 | principles | the playbooks that load them |
+
+## does it help
+
+the same model on the same clean setup, with and without kagestack, 5 runs each. each task hides a trap. scoring is plain code that checks the outcome, never whether a playbook step was followed.
+
+| playbook | trap | with kagestack | without | cost per run |
+|---|---|---|---|---|
+| `bug-fix` | the bug sits in a helper two pages share | both pages fixed 5/5 | 0/5, patched one caller | $0.28 vs $0.22 |
+| `pr` | the team template lives in the org's `.github` repo, and the branch's test passes without the fix | template filled 5/5, a test that fails without the fix 5/5 | 0/5, 0/5 | $0.33 vs $0.17 |
+| `handoff` | stop mid-task, with context only in the prompt and a token in an untracked `.env` | pushed with the full note 5/5, token never pushed | pushed 3/10 | $0.21 vs $0.20 |
+| `investigate` | the question has a wrong premise | right reason 5/5, cites file:line 5/5 | 5/5, 2/5 | $0.21 vs $0.13 |
+| `refactor` | a "dead" function is called by name from config | tie on behavior; leaves tests that pin the old behavior 5/5 | 0/5 | $0.39 vs $0.20 |
+| `perf` | the obvious N+1 query is 2% of the time | tie: 45x vs 47x faster | | $0.45 vs $0.23 |
+| `feature` | a morning job undoes a naive pause | tie: 5/5 | 5/5 | $0.61 vs $0.21 |
+
+rerun a row with `python3 evals/run.py <folder>` (`bug-fix`, `pr`, `handoff`, `investigate`, `refactor`, `perf`, `feature-flags`). measured 2026-11-18. "with kagestack" means the plugin plus its one-line pointer.
 
 not shipped: `babysit`. `evals/babysit` showed no win over a plain agent yet.
 
@@ -74,7 +83,7 @@ python3 evals/run.py pr
 python3 evals/run.py feature-flags --against <ref>
 ```
 
-scoring is plain code: what the agent ran, what it made, whether the tests pass. no model judges. each run costs real model time, about $0.50 to $1.50.
+scoring is plain code: what the agent made and whether it works. no model judges. each run costs real model time, about $0.15 to $0.60.
 
 ## status
 
