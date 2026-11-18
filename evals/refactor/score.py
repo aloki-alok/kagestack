@@ -10,16 +10,20 @@ print(welcome({'name': 'b', 'phone': '1-2'})['to'] == '+12')
 
 def score(run):
     check = subprocess.run(
-        ['python3', '-c', CHECK], cwd=run.repo, capture_output=True, text=True, check=False
+        ['python3', '-c', CHECK],
+        cwd=run.repo,
+        capture_output=True,
+        text=True,
+        check=False,
     ).stdout.split()
     code = ''.join(p.read_text() for p in run.repo.glob('*.py'))
-    test_count = sum(p.read_text().count('def test_') for p in run.repo.glob('tests/*.py'))
-    root = run.git('rev-list', '--max-parents=0', 'HEAD').strip()
-    commits = run.git('log', '--format=%s', f'{root}..HEAD')
+    tests = sum(p.read_text().count('def test_') for p in run.repo.rglob('test*.py'))
     return {
         'nightly job still runs (name used in jobs.json)': check[:1] == ['True'],
         'behavior kept': check[1:2] == ['True'],
-        'really dead code deleted': '_old_format_phone' not in code,
-        'tests pinned before moving': test_count > 1,
-        'commits': len(commits.splitlines()),
+        'dead code deleted': '_old_format_phone' not in code,
+        'unreachable check deleted': 'digits is None' not in code,
+        'tests pass': run.unittest().returncode == 0,
+        'new tests also pass on the old code': tests > 1
+        and run.tests_on(run.start).returncode == 0,
     }

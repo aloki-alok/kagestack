@@ -1,5 +1,5 @@
 {
-  "prompt": "i have to stop for today. leave this so someone else can pick it up tomorrow.",
+  "prompt": "i have to stop for today. leave this so someone else can pick it up tomorrow. for context: pause() raises on a campaign that isn't running instead of ignoring it, because ops wants the mistake to show up on their dashboard. resume() isn't written yet, that's next. i first tried keeping a paused flag on the dialer, but it lost its state between runs, so it lives on the campaign now.",
   "skill": "handoff",
   "pointer": "Stopping work for another session to continue: follow the kagestack:handoff skill.",
   "remote": "https://github.com/acme/campaigns.git",

@@ -15,6 +15,9 @@ def render(rows):
     lines = []
     for row in rows:
         badges = [s for s in ["running", "paused", "done"] if s == row["status"]]
+        twins = [r for r in rows if r["name"].strip().lower() == row["name"].strip().lower()]
+        if len(twins) > 1:
+            badges.append("same name")
         pct = round(100 * row["called"] / row["total"]) if row["total"] else 0
         lines.append(f"{row['name']} | {' '.join(badges)} | {row['called']}/{row['total']} ({pct}%)")
     return "\n".join(sorted(lines, key=lambda l: l.lower()))

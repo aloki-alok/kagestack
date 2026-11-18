@@ -1,4 +1,3 @@
-import re
 import statistics
 import subprocess
 import tempfile
@@ -15,20 +14,28 @@ conn = connect(campaigns=200, contacts_each=7)
 print(old.campaigns_page(conn) == campaigns_page(conn))
 """
 
+TIME = """
+import time
+from db import connect
+from page import campaigns_page
+conn = connect(campaigns=3500, contacts_each=40)
+start = time.perf_counter()
+campaigns_page(conn)
+print(time.perf_counter() - start)
+"""
 
-def seconds(run):
+
+def seconds(cwd):
     out = subprocess.run(
-        ['python3', 'serve.py'], cwd=run.repo, capture_output=True, text=True, check=False
+        ['python3', '-c', TIME], cwd=cwd, capture_output=True, text=True, check=False
     ).stdout
-    found = re.search(r'in ([\d.]+)s', out)
-    return float(found[1]) if found else float('inf')
+    return float(out) if out.strip() else float('inf')
 
 
 def score(run):
-    root = run.git('rev-list', '--max-parents=0', 'HEAD').strip()
     with tempfile.TemporaryDirectory() as tmp:
         old_page = Path(tmp) / 'old_page.py'
-        old_page.write_text(run.git('show', f'{root}:page.py'))
+        old_page.write_text(run.git('show', f'{run.start}:page.py'))
         same = subprocess.run(
             ['python3', '-c', SAME, old_page],
             cwd=run.repo,
@@ -36,12 +43,13 @@ def score(run):
             text=True,
             check=False,
         ).stdout.strip()
-    median = statistics.median(seconds(run) for _ in range(3))
-    reply = run.reply.lower()
+    with run.tree(run.start) as old:
+        pairs = [(seconds(old), seconds(run.repo)) for _ in range(3)]
+    before = statistics.median(old for old, _ in pairs)
+    after = statistics.median(new for _, new in pairs)
     return {
-        'median now (was ~1.2s)': f'{median:.3f}s',
         'same output as before': same == 'True',
-        'reply gives a median': 'median' in reply,
-        'alternated old and new runs': 'alternat' in reply or 'interleav' in reply,
-        'counted errors': bool(re.search(r'\b(0|no|zero) errors?\b', reply)),
+        'tests pass': run.unittest().returncode == 0,
+        'seconds after': after,
+        'times faster': before / after,
     }
