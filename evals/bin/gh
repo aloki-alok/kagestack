@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 OUT = Path(os.environ['EVAL_OUT'])
@@ -52,9 +53,123 @@ def not_found():
     sys.exit(1)
 
 
+def ci(pr):
+    remote = os.environ['EVAL_REMOTE_PATH']
+    head = subprocess.run(
+        ['git', '--git-dir', remote, 'rev-parse', pr['headRefName']],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    archive = subprocess.run(
+        ['git', '--git-dir', remote, 'archive', head], capture_output=True, check=False
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        subprocess.run(['tar', '-x', '-C', tmp], input=archive.stdout, check=False)
+        tests = subprocess.run(
+            [sys.executable, '-m', 'unittest', '-q'],
+            cwd=tmp,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        log = tests.stderr.replace(tmp, f'/home/runner/work/{name}/{name}')
+    passed = tests.returncode == 0
+    append('ci.jsonl', {'head': head, 'passed': passed})
+    return passed, log
+
+
+def review_comments():
+    path = EVAL / 'comments.json'
+    return json.loads(path.read_text()) if path.exists() else []
+
+
+def open_pr(pr):
+    passed, log = ci(pr)
+    conclusion = 'SUCCESS' if passed else 'FAILURE'
+    run_url = f'{url}/actions/runs/4242'
+    if command == 'pr checks':
+        if '--json' in args:
+            bucket = 'pass' if passed else 'fail'
+            print(json.dumps([{'name': 'test', 'bucket': bucket, 'link': run_url}]))
+        else:
+            print(f'test\t{"pass" if passed else "fail"}\t21s\t{run_url}')
+        sys.exit(0 if passed else 1)
+    if command == 'pr view' and '--json' in args:
+        print(
+            json.dumps(
+                {
+                    **pr,
+                    'url': f'{url}/pull/{pr["number"]}',
+                    'state': 'OPEN',
+                    'isDraft': False,
+                    'mergeStateStatus': 'CLEAN' if passed else 'BLOCKED',
+                    'reviewDecision': 'REVIEW_REQUIRED',
+                    'statusCheckRollup': [
+                        {'name': 'test', 'conclusion': conclusion, 'detailsUrl': run_url}
+                    ],
+                    'comments': [
+                        {'author': {'login': c['user']}, 'body': c['body']}
+                        for c in review_comments()
+                    ],
+                }
+            )
+        )
+    elif command == 'pr view':
+        print(f'{pr["title"]} acme/{name}#{pr["number"]}\nOpen\n\n{pr["body"]}\n')
+        for c in review_comments():
+            print(f'{c["user"]} ({c["path"]}:{c["line"]}):\n{c["body"]}\n')
+    elif command == 'pr list':
+        print(json.dumps([{**pr, 'url': f'{url}/pull/{pr["number"]}'}]))
+    elif command == 'run list':
+        print(json.dumps([{'databaseId': 4242, 'conclusion': conclusion.lower()}]))
+    elif command == 'run view':
+        print(f'test\tRun tests\t{log}')
+    elif command == 'pr merge':
+        (OUT / 'merge.txt').write_text(line)
+        print(f'Merged pull request acme/{name}#{pr["number"]}')
+    elif command in ('pr comment', 'pr review') or (
+        args[:1] == ['api'] and ('POST' in args or '-f' in args or '--input' in args)
+    ):
+        append('replies.jsonl', {'args': line, 'body': body()})
+        print('{}')
+    elif args[:1] == ['api'] and 'graphql' in args:
+        threads = [
+            {
+                'id': f'T{c["id"]}',
+                'isResolved': False,
+                'comments': {
+                    'nodes': [
+                        {
+                            'databaseId': c['id'],
+                            'body': c['body'],
+                            'author': {'login': c['user']},
+                            'path': c['path'],
+                            'line': c['line'],
+                        }
+                    ]
+                },
+            }
+            for c in review_comments()
+        ]
+        pull = {'reviewThreads': {'nodes': threads}}
+        print(json.dumps({'data': {'repository': {'pullRequest': pull}}}))
+    elif args[:1] == ['api'] and '/comments' in line:
+        print(json.dumps(review_comments()))
+    else:
+        return False
+    return True
+
+
 command = ' '.join(args[:2])
 name = repo_name()
 url = f'https://github.com/acme/{name}'
+pr_file = EVAL / 'pr.json'
+if pr_file.exists() and (
+    args[:1] in (['pr'], ['run']) or args[:1] == ['api'] and 'template' not in line
+):
+    if open_pr(json.loads(pr_file.read_text())):
+        sys.exit(0)
 if command == 'repo view':
     print(
         json.dumps(

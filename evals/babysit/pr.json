@@ -1,0 +1,7 @@
+{
+  "number": 12,
+  "title": "feat(checkout): free shipping on orders of 50 or more",
+  "headRefName": "free-shipping",
+  "baseRefName": "main",
+  "body": "Orders of 50 or more ship free. Below that, shipping stays weight-based."
+}

@@ -1,0 +1,7 @@
+{
+  "prompt": "pr 12 is red and has review comments. get it ready to merge.",
+  "skill": "babysit",
+  "pointer": "A pull request with failing checks or review comments to get ready: follow the kagestack:babysit skill.",
+  "remote": "https://github.com/acme/checkout.git",
+  "max_turns": 80
+}
