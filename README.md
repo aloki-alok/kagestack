@@ -2,7 +2,7 @@
 
 checks and playbooks so coding agents write clean code without babysitting. (｀・ω・´)ゞ
 
-- **playbooks**: one per job (bug fix, feature, refactor, perf, investigate, pr, handoff). every step ends in proof.
+- **playbooks**: one per job (bug fix, feature, refactor, perf, investigate, pr, handoff, scout). every step ends in proof.
 - **checks**: `ks check` fails a pull request that adds comments to code.
 
 ## does it help
@@ -31,6 +31,10 @@ fails on comments in python, js, jsx, ts and tsx, docstrings included. tool dire
 it checks only lines your branch added since it left main, so an old repo can start today. a comment you moved or kept on a changed line is not new. `--all` checks every line, `--base <ref>` picks the starting point.
 
 put the why in a name, a test, or the commit message.
+
+## ks tools
+
+names older tools in a repo and the faster, maintained option for each, like eslint → oxlint or pip → uv. the list is dated. the `scout` playbook rechecks it.
 
 ## how it stays honest
 

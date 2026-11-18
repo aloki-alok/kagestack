@@ -9,6 +9,8 @@ import sys
 import sysconfig
 from typing import NamedTuple
 
+from ks.tools import tools
+
 RULES = """
 id: comment
 language: python
@@ -159,6 +161,7 @@ def main():
     parser.add_argument('--version', action='version', version=f'ks {version}')
     commands = parser.add_subparsers(dest='command', required=True)
     check_command = commands.add_parser('check', help='fail on comments in code')
+    check_command.set_defaults(run=check)
     scope = check_command.add_mutually_exclusive_group()
     scope.add_argument(
         '--all', action='store_true', help='report every comment, not only new ones'
@@ -166,9 +169,11 @@ def main():
     scope.add_argument(
         '--base', help='count lines added since this ref (default: the main branch)'
     )
+    tools_command = commands.add_parser('tools', help='name faster modern tools')
+    tools_command.set_defaults(run=tools)
     args = parser.parse_args()
     try:
-        return check(args)
+        return args.run(args)
     except subprocess.CalledProcessError as error:
         reason = error.stderr.strip() or f'{" ".join(error.cmd[:2])} failed'
         print(f'ks: {reason}', file=sys.stderr)
