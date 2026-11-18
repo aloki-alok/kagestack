@@ -1,6 +1,6 @@
 {
   "name": "kagestack",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "checks and skills so coding agents write clean code",
   "author": {
     "name": "Alok Ranjan",

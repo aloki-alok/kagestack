@@ -33,7 +33,22 @@ building features and fixing bugs with agents, cleanly, without babysitting them
 
 ## does it help
 
-the same model on the same clean setup (no personal config, no MCP servers), with and without the plugin, 5 runs each. each task hides a trap. scoring is plain code that checks the outcome, never whether a playbook step was followed. a win needs a gap of 4 runs or more.
+### blind eval (the one to trust)
+
+a fresh agent that never saw this repo built its own tasks and hidden tests. it was told only what the plugin is for and how to load it, and it ran Claude Opus 5.5 with and without the plugin on a clean setup. 2026-11-18, about $16.
+
+| job | runs per side | hidden tests passed | verdict |
+|---|---|---|---|
+| bug fix | 10 | 10/10 vs 10/10 | hurts: the smaller fix changed the bad-input error in 8/10 runs vs 2/10 |
+| refactor | 5 | 5/5 vs 5/5 | helps: adds tests that lock behavior first, 5/5 vs 0/5 |
+| feature | 5 | 5/5 vs 5/5 | helps a little: more tests, judge preferred it 8 to 2 |
+| perf, investigate, handoff, a second bug | 4 to 5 | all equal | no difference |
+
+the plugin cost 1.4 to 2x as much per run. the tasks were small, so both sides hit the ceiling on correctness. `bug-fix` now keeps the errors and return types callers rely on, and still needs a new blind eval.
+
+### author-built eval
+
+written by the plugin's author, so read it as a regression check. 5 runs per side, clean setup, outcome checks only.
 
 | playbook | trap | with kagestack | without | verdict | cost per run |
 |---|---|---|---|---|---|

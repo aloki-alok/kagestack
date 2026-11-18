@@ -11,8 +11,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/principles.md` before step 1.
    Done when it goes red for that symptom twice in a row. A flaky bug must go red at least half the time.
 2. **Find the root cause.** Rank three to five candidate causes. Rule each out with a run or a log line until one survives.
    Done when you can write `Root cause: <X> because <Y>`, where Y is a mechanism you observed.
-3. **Fix at the cause.** List every caller of the code you will change. Fix where they all route through.
-   Done when every line of the diff is justified by the root-cause line.
+3. **Fix at the cause.** List every caller of the code you will change. Fix where they all route through. Keep what callers rely on outside the bug: the return type, the errors raised, and how bad input is handled.
+   Done when every line of the diff is justified by the root-cause line, and a run on bad input gives the same result as before the fix.
 4. **Go green.** Rerun the command from step 1.
    Done when it passes, and the tests around the change pass.
 5. **Commit red before green.** The failing test lands in its own commit, then the fix.
