@@ -64,6 +64,18 @@ put the why in a name, a test, or the commit message.
 
 names older tools in a repo and the faster, maintained option for each, like eslint → oxlint or pip → uv. the list is dated. the `scout` playbook rechecks it.
 
+## ks screens
+
+```
+ks screens localhost:3000 --screens iphone,android
+```
+
+opens a page (a url, a host, or an html file) on 7 screens: iphone (webkit), android (chromium), firefox at phone width, ipad, and desktop chrome, safari and firefox. it saves a screenshot of each and lists what's broken: sideways scroll and the elements that cause it, a missing viewport tag, http errors, uncaught errors, console errors. exit 1 means problems.
+
+`--full` captures the whole page, `--out <folder>` picks where screenshots go. the first run pulls playwright through uv and downloads the browsers once.
+
+webkit at iphone size is close to safari on ios for layout, not the same. ios-only bugs (the toolbar jumping `100vh`, safe areas, inputs that zoom) need the ios simulator.
+
 ## how it stays honest
 
 1. highest level that works: structure, then a check, then a test. prose is last.
