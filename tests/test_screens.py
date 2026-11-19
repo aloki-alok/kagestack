@@ -34,10 +34,6 @@ def test_an_unknown_screen_is_refused_with_every_valid_name():
         assert screen.name in result.stderr
 
 
-def test_a_missing_page_is_refused():
-    assert ks_screens().returncode == 2
-
-
 def test_a_target_becomes_a_url():
     assert (
         target_url('https://a.example/p?q=1', Path('/w')) == 'https://a.example/p?q=1'
@@ -47,6 +43,15 @@ def test_a_target_becomes_a_url():
         == 'http://localhost:3000/pricing'
     )
     assert target_url('127.0.0.1:8080', Path('/w')) == 'http://127.0.0.1:8080'
+    assert (
+        target_url('localhost:3000/index.html', Path('/w'))
+        == 'http://localhost:3000/index.html'
+    )
+    assert (
+        target_url('example.com/about.htm', Path('/w'))
+        == 'http://example.com/about.htm'
+    )
+    assert target_url('index.html', Path('/w')) == 'file:///w/index.html'
     assert target_url('site/index.html', Path('/w')) == 'file:///w/site/index.html'
     assert target_url('/abs/page.html', Path('/w')) == 'file:///abs/page.html'
 

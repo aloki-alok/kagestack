@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+
+<title>No viewport tag</title>
+<style>
+  body { margin: 0; font: 16px system-ui; }
+  .hero { width: 600px; height: 120px; background: #c33; }
+  .table-wrap { overflow-x: auto; }
+  .table-wrap table { width: 900px; }
+</style>
+</head>
+<body>
+  <div class="hero">600px wide: scrolls the page sideways on a phone</div>
+  <div class="table-wrap"><table><tr><td>900px wide, but inside a scroll box, so the page does not scroll</td></tr></table></div>
+  <script>console.error('fixture console error')</script>
+</body>
+</html>

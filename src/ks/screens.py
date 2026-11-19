@@ -66,7 +66,12 @@ class Result:
 
 READ_LAYOUT = """() => {
   const root = document.documentElement, width = root.clientWidth
-  const wideBy = Math.max(root.scrollWidth, document.body?.scrollWidth ?? 0) - width
+  const rootOverflow = getComputedStyle(root).overflowX
+  const pageOverflow = rootOverflow === 'visible' && document.body
+    ? getComputedStyle(document.body).overflowX : rootOverflow
+  const canScroll = pageOverflow !== 'hidden' && pageOverflow !== 'clip'
+  const overflowBy = Math.max(root.scrollWidth, document.body?.scrollWidth ?? 0) - width
+  const wideBy = canScroll ? overflowBy : 0
   const viewportMeta = !!document.querySelector('meta[name="viewport"]')
   if (wideBy <= 0) return { wideBy: 0, wideElements: [], viewportMeta }
   const insideScrollBox = el => {
@@ -92,15 +97,17 @@ READ_LAYOUT = """() => {
 }"""
 
 URL_SCHEME = re.compile(r'^[a-z][a-z0-9+.-]*://', re.IGNORECASE)
-BARE_HOST = re.compile(
-    r'^(localhost|\d{1,3}(\.\d{1,3}){3}|[\w-]+(\.[\w-]+)+)(:\d+)?(/|$)', re.IGNORECASE
+HOST = re.compile(
+    r'^(localhost|\d{1,3}(\.\d{1,3}){3}|[\w-]+(\.[\w-]+)+)(:\d+)?$', re.IGNORECASE
 )
+HTML_FILE = re.compile(r'\.html?$', re.IGNORECASE)
 
 
 def target_url(target, cwd):
     if URL_SCHEME.match(target):
         return target
-    if BARE_HOST.match(target) and not re.search(r'\.html?$', target, re.IGNORECASE):
+    host = target.split('/')[0]
+    if HOST.match(host) and not HTML_FILE.search(host):
         return f'http://{target}'
     return (cwd / target).resolve().as_uri()
 
@@ -208,6 +215,7 @@ def check_one(context, screen, url, file, full_page):
 
 
 def check_screens(page, screens, out, full_page=False, cwd=None):
+    from playwright.sync_api import Error as PlaywrightError
     from playwright.sync_api import sync_playwright
 
     url = target_url(page, cwd or Path.cwd())
@@ -217,8 +225,16 @@ def check_screens(page, screens, out, full_page=False, cwd=None):
     with sync_playwright() as playwright:
         install_missing(playwright, engines)
         for engine in engines:
-            browser = getattr(playwright, engine).launch()
-            for screen in [s for s in screens if s.engine == engine]:
+            engine_screens = [s for s in screens if s.engine == engine]
+            try:
+                browser = getattr(playwright, engine).launch()
+            except PlaywrightError as error:
+                reason = f'{engine} did not start: {str(error).splitlines()[0]}'
+                results |= {
+                    s.name: Result(s, load_error=reason) for s in engine_screens
+                }
+                continue
+            for screen in engine_screens:
                 options = (
                     playwright.devices[screen.preset]
                     if screen.preset
@@ -255,6 +271,8 @@ def screens(args):
             'run',
             '--quiet',
             '--no-project',
+            '--python',
+            sys.executable,
             '--with',
             PLAYWRIGHT,
             'python',
