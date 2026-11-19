@@ -1,6 +1,6 @@
 [project]
 name = "kagestack"
-version = "0.20.0"
+version = "0.21.0"
 description = "checks that keep coding agents writing clean code"
 readme = "README.md"
 license = "MIT"
@@ -11,7 +11,10 @@ dependencies = ["ast-grep-cli==0.51.3"]
 ks = "ks.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = [
+    "playwright==1.65.0",
+    "pytest>=8",
+]
 
 [build-system]
 requires = ["uv_build>=0.11,<0.12"]

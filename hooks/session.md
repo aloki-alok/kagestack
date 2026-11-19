@@ -13,3 +13,5 @@ Before your first action on a task, pick the kagestack playbook that matches it.
 - Stopping mid-task: `kagestack:handoff`.
 
 Load each playbook once per task.
+
+To see a web page on phones, a tablet and desktops in Chromium, WebKit and Firefox, run `ks screens <url or file>`. It saves a screenshot of each and lists sideways scroll, page errors and console errors. Use it before you write your own browser script.
