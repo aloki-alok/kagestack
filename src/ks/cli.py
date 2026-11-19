@@ -12,6 +12,8 @@ from typing import NamedTuple
 
 from ks.doctor import doctor
 from ks.package import package
+from ks.screens import add_arguments as add_screen_arguments
+from ks.screens import screens
 from ks.setup import ManifestError, read_commands, setup
 from ks.tools import tools
 
@@ -217,6 +219,13 @@ def main():
         'write the playbooks to .agents/skills for codex and opencode',
     ).add_argument('--check', action='store_true', help='fail if they are stale')
     command('tools', tools, 'name faster, maintained replacements for old dev tools')
+    add_screen_arguments(
+        command(
+            'screens',
+            screens,
+            'screenshot a page on phones and desktops in every browser engine, and list its layout and console problems',
+        )
+    )
     args = parser.parse_args()
     try:
         return args.run(args)

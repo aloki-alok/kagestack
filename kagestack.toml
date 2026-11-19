@@ -1,3 +1,4 @@
 # ks ci runs these in order, then ks check.
 [commands]
+install = ["uv run --locked playwright install --with-deps chromium webkit firefox"]
 test = ["uv run --locked pytest"]
