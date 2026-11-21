@@ -16,6 +16,7 @@ Five minutes, then a verdict. Newer wins only when it is maintained, adopted and
 6. **Stop on a red flag:** no release in 6 months, one maintainer, an unclear license, archived with no successor, or 0.x with no stable API.
 7. **Measure on this repo.** Run old and new with `hyperfine`, at least 5 runs, and compare their output.
    Done when you have both medians and the output differences.
+8. **Treat each autofix as a code change.** Before you apply the new tool's fixes, have tests that pin the code they touch. Apply one rule at a time and read its diff. A rename can change a destructured key, and a style fix can break a platform alias.
 
 ## Reply
 

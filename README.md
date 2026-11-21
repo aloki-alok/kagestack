@@ -62,7 +62,7 @@ put the why in a name, a test, or the commit message.
 
 ## clear old comments
 
-`kagestack:clear-comments` hands the comments in the code you changed to a reviewer agent that didn't write them. each comment gets a verdict: delete it, change the code so it says the same thing, turn its rule into a test, or keep it with proof (a license, docs for an outside caller, a vendor quirk).
+`kagestack:clear-comments` hands the comments in the code you changed to a reviewer agent that didn't write them. each comment gets a verdict: delete it, change the code so it says the same thing (or open an issue when that change is too big), move a real decision into an ADR, turn its rule into a test, or keep it with proof (a license, docs for an outside caller, a vendor quirk). `ks check --all` counts the comments and lines first, so you know the size of the job.
 
 ## ks tools
 
