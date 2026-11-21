@@ -9,5 +9,8 @@
   "homepage": "https://github.com/aloki-alok/kagestack",
   "repository": "https://github.com/aloki-alok/kagestack",
   "license": "MIT",
-  "skills": "./src/ks/skills/"
+  "skills": "./src/ks/skills/",
+  "agents": [
+    "./src/ks/agents/comment-reviewer.md"
+  ]
 }

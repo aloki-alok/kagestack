@@ -45,6 +45,21 @@ def test_every_skill_is_named_after_its_folder():
         assert f'\nname: {skill.name}\n' in (skill / 'SKILL.md').read_text()
 
 
+def test_every_agent_a_playbook_starts_exists_under_its_name():
+    agents = {
+        path.stem: path.read_text() for path in (ROOT / 'src/ks/agents').glob('*.md')
+    }
+    playbooks = ''.join(
+        path.read_text() for path in (ROOT / 'src/ks/skills').glob('*/SKILL.md')
+    )
+
+    started = set(re.findall(r'`kagestack:([\w-]+)` agent', playbooks))
+    assert started
+    assert started <= agents.keys()
+    for name, text in agents.items():
+        assert text.startswith(f'---\nname: {name}\n')
+
+
 def test_stop_hook_runs_the_review_script():
     hooks = json.loads((ROOT / 'hooks/hooks.json').read_text())['hooks']
 
