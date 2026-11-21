@@ -10,6 +10,7 @@ Before your first action on a task, pick the kagestack playbook that matches it.
 - Something slow, or a speedup claim: `kagestack:perf`.
 - Opening a pull request or rewriting its description: `kagestack:pr`.
 - Picking or keeping a dev tool or library: `kagestack:scout`.
+- Making a page, doc or diagram for someone to read or decide from: `kagestack:explain`.
 - Testing whether a skill, prompt or rule change helps: `kagestack:eval`.
 - Stopping mid-task: `kagestack:handoff`.
 
