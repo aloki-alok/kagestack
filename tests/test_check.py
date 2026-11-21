@@ -244,7 +244,7 @@ def test_tool_directives_pass(repo):
                 '# -*- coding: utf-8 -*-\n'
                 'import os  # noqa: F401\n'
                 'a: int = "1"  # type: ignore[assignment]\n'
-                'b = 1  # pyright: ignore\n'
+                'b = 1  # pyright: ignore[reportGeneralTypeIssues]\n'
                 'c = 1  # pylint: disable=invalid-name\n'
                 '# fmt: off\n'
                 'd = [1,2]\n'
@@ -252,21 +252,20 @@ def test_tool_directives_pass(repo):
                 'e = [1,2]  # fmt: skip\n'
                 'if a:  # pragma: no cover\n'
                 '    pass\n'
-                'import re  # NOQA\n'
+                'import re  # NOQA: F401\n'
+                '# SPDX-License-Identifier: MIT\n'
             ),
             'b.tsx': (
                 '// @ts-check\n'
                 '/* eslint-env node */\n'
                 '/// <reference types="node" />\n'
-                '// @ts-nocheck\n'
                 '/* eslint-disable no-console */\n'
                 '// eslint-disable-next-line no-undef\n'
-                'f(); // eslint-disable-line\n'
+                'f(); // eslint-disable-line no-undef\n'
                 '/* eslint-enable no-console */\n'
+                '/* eslint-enable */\n'
                 '// @ts-expect-error\n'
                 'g();\n'
-                '// @ts-ignore\n'
-                'h();\n'
                 '// prettier-ignore\n'
                 'const i = [1,2];\n'
                 '// biome-ignore lint: generated\n'
@@ -279,6 +278,46 @@ def test_tool_directives_pass(repo):
     result = ks_check(repo, '--all')
 
     assert result.returncode == 0, result.stdout
+
+
+def test_suppression_that_names_no_rule_fails(repo):
+    commit(
+        repo,
+        {
+            'a.py': (
+                'import os  # noqa\n'
+                'import re  # NOQA\n'
+                'a: int = "1"  # type: ignore\n'
+                'b: int = "1"  # pyright: ignore\n'
+            ),
+            'b.ts': (
+                '// @ts-nocheck\n'
+                '// @ts-ignore\n'
+                'h();\n'
+                '/* eslint-disable */\n'
+                'f(); // eslint-disable-line\n'
+                '// eslint-disable-next-line\n'
+                'g();\n'
+            ),
+        },
+    )
+
+    result = ks_check(repo, '--all')
+
+    assert result.returncode == 1
+    for hit in (
+        'a.py:1:',
+        'a.py:2:',
+        'a.py:3:',
+        'a.py:4:',
+        'b.ts:1:',
+        'b.ts:2:',
+        'b.ts:4:',
+        'b.ts:5:',
+        'b.ts:6:',
+    ):
+        assert hit in result.stdout
+    assert 'name the rule' in result.stdout
 
 
 def test_prose_after_line_two_that_mentions_coding_fails(repo):
