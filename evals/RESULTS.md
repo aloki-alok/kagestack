@@ -14,12 +14,14 @@ a fresh agent that never read this repo built the tasks and hidden tests. it was
 | 2026-11-18 | Sonnet 5.5 | 80 | 24/40 vs 28/40 | bug fix 39/40 vs 8/40 | 1.6x |
 | 2026-11-18 | Opus 5.5 | 78 | equal on every job | refactor 5/5 vs 0/5 | 1.4 to 2x |
 | 2026-11-21 | Sonnet 5.5 | 20 | `explain`: all decisions and key facts kept 10/10 vs 10/10 | short page 9/10 vs 0/10 (median 284 vs 1,310 words), one diagram 4/10 vs 0/10 | 1.0 to 1.5x |
+| 2026-11-21 | Sonnet 5.5 | 10 | `explain` rows vs 0.24.0: all items kept 5/5 vs 5/5 | outcome phrase on 80% of rows 5/5 vs 0/5, rows of 30 words or fewer 5/5 vs 3/5 | 1.06x |
 
 what changed after each:
 - the first one found `bug-fix` changed the bad-input error in 8/10 runs. the playbook now keeps what callers rely on.
 - the second found the fix stopped short: BOM fixed, CRLF left, in 6/6 runs. the principle became "fix every form of the fault".
 - the third found that loss gone. 76 of 80 runs scored 100%, so these tasks are too small to show a correctness win. Haiku used a skill in 1 of 20 runs.
 - the fourth found `explain` pages still put up to 17 labels in a diagram and once skipped looking at the render. a check is the next step, not more text.
+- the fifth found two rows of five still added a reasoning line ("Pick: Later, real demand, but..."), and one outcome overclaimed a local measurement as the user's result.
 
 ## author-built evals
 
