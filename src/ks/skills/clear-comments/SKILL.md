@@ -18,7 +18,7 @@ The author of a comment defends it, so a reviewer who didn't write it judges it.
 5. **Reshape.** Make each named change, then delete its comment. Behavior must not change: follow the `refactor` playbook for anything beyond a rename. If a reshape reaches outside the scope, delete the comment and list the reshape as open.
 6. **Encode.** Write each named check and watch it fail when you break the rule on purpose. Then delete the comment.
    Done when every encoded rule has a check that went red, then green.
-7. **Prove it.** Run `ks check` on the scope and the repo's tests.
+7. **Prove it.** Run `ks check` and the repo's tests.
 
 ## Reply
 

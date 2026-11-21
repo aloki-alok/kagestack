@@ -48,10 +48,8 @@ TOOL_DIRECTIVE = re.compile(
     re.IGNORECASE,
 )
 SUPPRESSES_EVERY_RULE = re.compile(
-    r'(#|//|/\*+)\s*('
-    r'noqa(?!:)|(type|pyright):\s*ignore(?!\[)|@ts-(ignore|nocheck)'
-    r'|eslint-disable(-next-line|-line)?\s*(\*/)?\s*$'
-    r')',
+    r'noqa(?!\s*:\s*\w)|(type|pyright):\s*ignore(?!\s*\[)|@ts-(ignore|nocheck)'
+    r'|eslint-disable(-next-line|-line)?(?=\s*(--|\*/|$))',
     re.IGNORECASE,
 )
 FILE_HEADER = re.compile(r'#!|#.*coding[:=]')
@@ -135,7 +133,7 @@ def find_hits(paths):
 
 def is_directive(hit):
     in_header = hit.first_line <= FILE_HEADER_LINES
-    if SUPPRESSES_EVERY_RULE.match(hit.text):
+    if SUPPRESSES_EVERY_RULE.search(hit.text):
         return False
     return bool(
         TOOL_DIRECTIVE.match(hit.text) or in_header and FILE_HEADER.match(hit.text)

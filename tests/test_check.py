@@ -253,6 +253,9 @@ def test_tool_directives_pass(repo):
                 'if a:  # pragma: no cover\n'
                 '    pass\n'
                 'import re  # NOQA: F401\n'
+                'import io  # noqa:F401\n'
+                'import sys  # noqa : F401\n'
+                'f: int = "1"  # pyright: ignore [reportAssignmentType]\n'
                 '# SPDX-License-Identifier: MIT\n'
             ),
             'b.tsx': (
@@ -289,6 +292,9 @@ def test_suppression_that_names_no_rule_fails(repo):
                 'import re  # NOQA\n'
                 'a: int = "1"  # type: ignore\n'
                 'b: int = "1"  # pyright: ignore\n'
+                'import io  # noqa:\n'
+                'c: int = "1"  # type: ignore[assignment] # noqa\n'
+                'import sys  # noqa: E501 # type: ignore\n'
             ),
             'b.ts': (
                 '// @ts-nocheck\n'
@@ -298,6 +304,9 @@ def test_suppression_that_names_no_rule_fails(repo):
                 'f(); // eslint-disable-line\n'
                 '// eslint-disable-next-line\n'
                 'g();\n'
+                '// eslint-disable-next-line -- flaky\n'
+                'k(); // eslint-disable-line -- flaky\n'
+                '/* eslint-disable -- generated */\n'
             ),
         },
     )
@@ -305,18 +314,11 @@ def test_suppression_that_names_no_rule_fails(repo):
     result = ks_check(repo, '--all')
 
     assert result.returncode == 1
-    for hit in (
-        'a.py:1:',
-        'a.py:2:',
-        'a.py:3:',
-        'a.py:4:',
-        'b.ts:1:',
-        'b.ts:2:',
-        'b.ts:4:',
-        'b.ts:5:',
-        'b.ts:6:',
-    ):
-        assert hit in result.stdout
+    reported = {line.split(': ')[0] for line in result.stdout.splitlines()}
+    for line in (1, 2, 3, 4, 5, 6, 7):
+        assert f'a.py:{line}' in reported
+    for line in (1, 2, 4, 5, 6, 8, 9, 10):
+        assert f'b.ts:{line}' in reported
     assert 'name the rule' in result.stdout
 
 
