@@ -18,7 +18,7 @@ A page nobody reads is waste. Build it for one reader and one action, after you 
    Done when a reader who stops after these lines knows what you know that matters to them.
 3. **Draw one picture that carries those lines.** One idea, at most eight labels, readable in five seconds. Choose the form from the content: a sequence for steps over time, boxes and arrows for structure, side by side for before and after, a chart for numbers. If the picture needs a paragraph to explain it, split it or pick another form.
    Done when someone who sees only the picture gets the gist.
-4. **Put decisions first.** Each one: the question, your recommendation, and a one-line reason. On an interactive page, each gets controls that save the answer, so the reader acts without writing back.
+4. **Put decisions right after the answer,** before anything else. Each one: the question, your recommendation, and a one-line reason. On an interactive page, each gets controls that save the answer, so the reader acts without writing back.
 5. **Cut to one screen.** The picture, the lines from step 2 and the decisions fit on one laptop screen. Evidence, field lists, rejected options and raw tables go in the source file or in collapsed sections. Use the reader's words, and drop jargon they don't use.
    Done when the visible text is under 300 words and holds at most one table.
 6. **Look at it.** Render it at phone and desktop width, in light and dark. On a web page, run `ks screens <file>`. Fix overlapping labels, clipped text and empty space.
