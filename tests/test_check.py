@@ -138,6 +138,7 @@ def test_all_catches_old_comment(feature_branch):
 
     assert result.returncode == 1
     assert 'old.py:1: # old' in result.stdout
+    assert '2 comments on 4 lines' in result.stdout
 
 
 def test_line_added_inside_old_block_comment_fails(feature_branch):

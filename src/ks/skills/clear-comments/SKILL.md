@@ -15,11 +15,12 @@ The author of a comment defends it, so a reviewer who didn't write it judges it.
 3. **Check the report.** Reject a flag outside the scope, a flag on code that isn't a comment, and a keep without proof. Turn a rejected keep into delete.
    Done when each verdict is accepted or rejected with a reason.
 4. **Delete,** in its own commit.
-5. **Reshape.** Make each named change, then delete its comment. Behavior must not change: follow the `refactor` playbook for anything beyond a rename. If a reshape reaches outside the scope, delete the comment and list the reshape as open.
-6. **Encode.** Write each named check and watch it fail when you break the rule on purpose. Then delete the comment.
+5. **Reshape.** Make each named change, then delete its comment. Behavior must not change: follow the `refactor` playbook for anything beyond a rename. If a reshape reaches outside the scope, open an issue that names the code and the change, then delete the comment. The issue is the only record left.
+6. **Record.** Write each decision as an ADR in the repo's decision folder, or in `docs/adr/` if it has none: `NNNN-<decision>.md` with Context, Decision and Consequences. Then delete the comment.
+7. **Encode.** Write each named check and watch it fail when you break the rule on purpose. Then delete the comment.
    Done when every encoded rule has a check that went red, then green.
-7. **Prove it.** Run `ks check` and the repo's tests.
+8. **Prove it.** Run `ks check` and the repo's tests.
 
 ## Reply
 
-The counts per verdict, each reshape and check in one line, and what stays open.
+The counts per verdict, each reshape, ADR and check in one line, and the issues you opened.
