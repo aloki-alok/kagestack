@@ -20,7 +20,11 @@ A page nobody reads is waste. Build it for one reader and one action, after you 
    Done when someone who sees only the picture gets the gist.
 4. **Put decisions right after the answer,** before anything else. Each one: the question, your recommendation, and a one-line reason. On an interactive page, each gets controls that save the answer, so the reader acts without writing back.
 5. **Keep only what the reader must understand,** on one screen: what is broken or missing, the approach, and what gets built. Delete everything else from the page: evidence, code locations, ticket numbers, field lists, rejected options. Never hide them in collapsed sections or dropdowns. They stay in the repo and the reply. Use the reader's words, and drop jargon they don't use.
-   In a list of items (ideas, issues, options), each row shows a name of up to five words, its outcome as before → after, such as "3 replies → 1 reply", and the approach as two short flows, "Now" and "Fix", with steps of three words or fewer, such as "Meta event → handler errors → returns 200 → message lost". All of it is visible, with no sentences.
+   For each item, show what the reader's user sees or feels today and after the change, in the form that fits that item. Choose it per item, never one template for all:
+   - The change shows up on a screen (a chat, an email, an alert, a page): draw a small mock of that screen, today and after, with real-looking content.
+   - It changes a number (cost, time, count): the number before and after.
+   - Anything else: one plain sentence for today and one for after.
+   Name each item by what it does for the user, in plain words. Group items by what they mean to the reader, not by system. If the reader would have to decode a label, a code name or an arrow chain, write the plain sentence instead.
    Done when the page has no collapsed sections, the visible text is under 300 words, and it holds at most one table.
 6. **Look at it.** Render it at phone and desktop width, in light and dark. On a web page, run `ks screens <file>`. Fix overlapping labels, clipped text and empty space.
    Done when you have opened the screenshots yourself.
