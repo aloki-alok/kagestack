@@ -16,6 +16,7 @@ a fresh agent that never read this repo built the tasks and hidden tests. it was
 | 2026-11-21 | Sonnet 5.5 | 20 | `explain`: all decisions and key facts kept 10/10 vs 10/10 | short page 9/10 vs 0/10 (median 284 vs 1,310 words), one diagram 4/10 vs 0/10 | 1.0 to 1.5x |
 | 2026-11-21 | Sonnet 5.5 | 10 | `explain` rows vs 0.24.0: all items kept 5/5 vs 5/5 | outcome phrase on 80% of rows 5/5 vs 0/5, rows of 30 words or fewer 5/5 vs 3/5 | 1.06x |
 | 2026-11-21 | Sonnet 5.5 | 10 | `explain` opened rows vs rows only: all tickets and locations kept 5/5 vs 5/5 | Now and Fix steps 5/5 vs 0/5, words per opened row 27 vs 75 | 1.0x |
+| 2026-11-21 | Sonnet 5.5 | 10 | `explain` no dropdowns vs 0.24.0: cause, fix and feature visible 4/5 vs 3/5 | nothing hidden 5/5 vs 0/5, no ticket ids or file paths 5/5 vs 0/5, median 172 vs 255 words | 1.0x |
 
 what changed after each:
 - the first one found `bug-fix` changed the bad-input error in 8/10 runs. the playbook now keeps what callers rely on.
@@ -24,6 +25,7 @@ what changed after each:
 - the fourth found `explain` pages still put up to 17 labels in a diagram and once skipped looking at the render. a check is the next step, not more text.
 - the fifth found two rows of five still added a reasoning line ("Pick: Later, real demand, but..."), and one outcome overclaimed a local measurement as the user's result.
 - the sixth found one run of five still put a sentence above the steps, and code locations ran together with no label.
+- the seventh found one page of five gave the bug's cause only as an arrow chain, never as a sentence. the next change picks each item's form from its content instead of one template.
 
 ## author-built evals
 

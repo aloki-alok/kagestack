@@ -24,6 +24,7 @@ A page nobody reads is waste. Build it for one reader and one action, after you 
    - The change shows up on a screen (a chat, an email, an alert, a page): draw a small mock of that screen, today and after, with real-looking content.
    - It changes a number (cost, time, count): the number before and after.
    - Anything else: one plain sentence for today and one for after.
+   Each item also says why it matters to the reader: how often it happens, to how many, or what it costs. Use a measured number, or mark it as a guess. A page of items with no such number can't support a recommendation, so say that instead of recommending.
    Name each item by what it does for the user, in plain words. Group items by what they mean to the reader, not by system. If the reader would have to decode a label, a code name or an arrow chain, write the plain sentence instead.
    Done when the page has no collapsed sections, the visible text is under 300 words, and it holds at most one table.
 6. **Look at it.** Render it at phone and desktop width, in light and dark. On a web page, run `ks screens <file>`. Fix overlapping labels, clipped text and empty space.
