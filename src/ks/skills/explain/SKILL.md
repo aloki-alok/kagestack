@@ -21,6 +21,7 @@ A page nobody reads is waste. Build it for one reader and one action, after you 
 4. **Put decisions right after the answer,** before anything else. Each one: the question, your recommendation, and a one-line reason. On an interactive page, each gets controls that save the answer, so the reader acts without writing back.
 5. **Cut to one screen.** The picture, the lines from step 2 and the decisions fit on one laptop screen. Evidence, field lists, rejected options and raw tables go in the source file or in collapsed sections. Use the reader's words, and drop jargon they don't use.
    In a list of items (ideas, issues, options), each row shows only a name of up to five words and its outcome as before → after, such as "3 replies → 1 reply". The why, the how and the code go behind a click.
+   Opened, a row still shows no sentences: two short flows, "Now" and "Fix", with steps of three words or fewer, such as "Meta event → handler errors → returns 200 → message lost". Code locations and issues appear as `file:line` and issue-number chips.
    Done when the visible text is under 300 words and holds at most one table.
 6. **Look at it.** Render it at phone and desktop width, in light and dark. On a web page, run `ks screens <file>`. Fix overlapping labels, clipped text and empty space.
    Done when you have opened the screenshots yourself.
