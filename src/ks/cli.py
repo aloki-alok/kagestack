@@ -166,6 +166,8 @@ def check(args):
     for hit in hits:
         print(f'{hit.path}:{hit.first_line}: {hit.text.splitlines()[0]}')
     if hits:
+        lines = sum(hit.last_line - hit.first_line + 1 for hit in hits)
+        print(f'{len(hits)} comments on {lines} lines')
         print(ADVICE)
         return 1
     print('no new comments')
