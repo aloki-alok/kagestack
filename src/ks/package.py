@@ -17,6 +17,11 @@ def expected():
         text = (skill / 'SKILL.md').read_text()
         text = text.replace(f'name: {skill.name}\n', f'name: {folder}\n', 1)
         text = text.replace(PLUGIN_PRINCIPLES, LOCAL_PRINCIPLES)
+        for agent in sorted((BUNDLE / 'agents').glob('*.md')):
+            plugin_path = f'`${{CLAUDE_PLUGIN_ROOT}}/src/ks/agents/{agent.name}`'
+            if plugin_path in text:
+                text = text.replace(plugin_path, f'`{agent.name}` in this skill folder')
+                files[f'{folder}/{agent.name}'] = agent.read_text()
         files[f'{folder}/SKILL.md'] = text
         if LOCAL_PRINCIPLES in text:
             files[f'{folder}/principles.md'] = (BUNDLE / 'principles.md').read_text()

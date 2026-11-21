@@ -41,6 +41,22 @@ def test_skill_names_its_folder_and_reads_principles_beside_it(tmp_path):
     assert not (repo / '.agents/skills/kagestack-pr/principles.md').exists()
 
 
+def test_skill_reads_its_agent_brief_beside_it(tmp_path):
+    repo = git_repo(tmp_path)
+
+    ks(repo)
+
+    skill = repo / '.agents/skills/kagestack-clear-comments'
+    text = (skill / 'SKILL.md').read_text()
+    assert '`comment-reviewer.md` in this skill folder' in text
+    assert '${CLAUDE_PLUGIN_ROOT}' not in text
+    assert (
+        (skill / 'comment-reviewer.md')
+        .read_text()
+        .startswith('---\nname: comment-reviewer\n')
+    )
+
+
 def test_check_passes_when_current_and_names_a_stale_file(tmp_path):
     repo = git_repo(tmp_path)
     ks(repo)

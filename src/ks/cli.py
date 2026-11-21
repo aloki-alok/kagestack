@@ -43,13 +43,22 @@ TOOL_DIRECTIVE = re.compile(
     r'|(#|//|/\*+)\s*('
     r'noqa|type:\s*ignore|pyright:|pylint:|fmt:\s*(on|off|skip)|pragma: no cover'
     r'|eslint-(disable|enable|env)|@ts-(check|expect-error|ignore|nocheck)'
-    r'|prettier-ignore|biome-ignore|#\s*sourceMappingURL='
+    r'|prettier-ignore|biome-ignore|#\s*sourceMappingURL=|SPDX-License-Identifier:'
     r')',
+    re.IGNORECASE,
+)
+SUPPRESSES_EVERY_RULE = re.compile(
+    r'noqa(?!\s*:\s*\w)|(type|pyright):\s*ignore(?!\s*\[)|@ts-(ignore|nocheck)'
+    r'|eslint-disable(-next-line|-line)?(?=\s*(--|\*/|$))',
     re.IGNORECASE,
 )
 FILE_HEADER = re.compile(r'#!|#.*coding[:=]')
 FILE_HEADER_LINES = 2
-ADVICE = 'put the why in a name, a test, or the commit message, not in a comment.'
+ADVICE = (
+    'put the why in a name, a test, or the commit message, not in a comment.\n'
+    'a suppression must name the rule it silences. if that rule guards correctness,'
+    ' fix the code instead.'
+)
 EVERY_LINE = range(1, sys.maxsize)
 DEFAULT_BASES = ('origin/HEAD', 'origin/main', 'origin/master', 'main', 'master')
 FILE_PATCH = re.compile(r'^diff --git ', re.MULTILINE)
@@ -124,6 +133,8 @@ def find_hits(paths):
 
 def is_directive(hit):
     in_header = hit.first_line <= FILE_HEADER_LINES
+    if SUPPRESSES_EVERY_RULE.search(hit.text):
+        return False
     return bool(
         TOOL_DIRECTIVE.match(hit.text) or in_header and FILE_HEADER.match(hit.text)
     )
