@@ -18,6 +18,7 @@ a fresh agent that never read this repo built the tasks and hidden tests. it was
 | 2026-11-21 | Sonnet 5.5 | 10 | `explain` opened rows vs rows only: all tickets and locations kept 5/5 vs 5/5 | Now and Fix steps 5/5 vs 0/5, words per opened row 27 vs 75 | 1.0x |
 | 2026-11-21 | Sonnet 5.5 | 10 | `explain` no dropdowns vs 0.24.0: cause, fix and feature visible 4/5 vs 3/5 | nothing hidden 5/5 vs 0/5, no ticket ids or file paths 5/5 vs 0/5, median 172 vs 255 words | 1.0x |
 | 2026-11-21 | Sonnet 5.5 | 10 | `explain` form per item vs no-dropdown version: no code names 5/5 vs 5/5 | screen changes as mocks 5/5 vs 0/5, real numbers kept and gaps marked 5/5 vs 0/5, no arrow chains 5/5 vs 0/5 | 1.09x |
+| 2026-11-21 | Sonnet 5.5 | 10 | `explain` concept pages built up in steps vs form per item: pictures built up 0/5 vs 0/5 | plain definition first 2/5 vs 0/5, median 850 vs 237 words | 1.4x, not shipped |
 
 what changed after each:
 - the first one found `bug-fix` changed the bad-input error in 8/10 runs. the playbook now keeps what callers rely on.
@@ -28,6 +29,7 @@ what changed after each:
 - the sixth found one run of five still put a sentence above the steps, and code locations ran together with no label.
 - the seventh found one page of five gave the bug's cause only as an arrow chain, never as a sentence. the next change picks each item's form from its content instead of one template.
 - the eighth found raw codes inside a "today" mock, numbers left as plain text, and "no number" repeated on every card. the next change draws every number, keeps mocks to what the user reads, and shapes concept and comparison pages too.
+- the ninth found that change made no picture series in any run and let concept pages grow to 850 words. reverted. building pictures up needs a tool or a check, not a sentence.
 
 ## author-built evals
 
