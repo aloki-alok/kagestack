@@ -2,8 +2,8 @@
 
 checks and playbooks so coding agents write clean code without babysitting. (｀・ω・´)ゞ
 
-- **playbooks**: one per job (bug fix, feature, refactor, perf, investigate, pr, handoff, scout). every step ends in proof.
-- **checks**: `ks check` fails a pull request that adds comments to code.
+- **playbooks**: one per job (bug fix, feature, refactor, clear comments, perf, investigate, pr, handoff, scout). every step ends in proof.
+- **checks**: `ks check` fails a pull request that adds comments to code, or a suppression that names no rule.
 
 ## does it help
 
@@ -54,11 +54,15 @@ writes the playbooks to `.agents/skills`, where codex and opencode find them. `k
 
 ## ks check
 
-fails on comments in python, js, jsx, ts and tsx, docstrings included. tool directives like `noqa`, `eslint-disable` and `@ts-expect-error` pass.
+fails on comments in python, js, jsx, ts and tsx, docstrings included. tool directives that name their rule pass, like `noqa: F401`, `type: ignore[assignment]`, `eslint-disable-next-line no-undef` and `@ts-expect-error`. a bare `noqa`, `type: ignore`, `pyright: ignore`, `eslint-disable`, `@ts-ignore` or `@ts-nocheck` fails, because it silences the checks that catch real bugs too.
 
 it checks only lines your branch added since it left main, so an old repo can start today. a comment you moved or kept on a changed line is not new. `--all` checks every line, `--base <ref>` picks the starting point.
 
 put the why in a name, a test, or the commit message.
+
+## clear old comments
+
+`kagestack:clear-comments` hands the comments in the code you changed to a reviewer agent that didn't write them. each comment gets a verdict: delete it, change the code so it says the same thing, turn its rule into a test, or keep it with proof (a license, docs for an outside caller, a vendor quirk).
 
 ## ks tools
 
