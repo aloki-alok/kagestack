@@ -60,9 +60,13 @@ def test_every_agent_a_playbook_starts_exists_under_its_name():
         assert text.startswith(f'---\nname: {name}\n')
 
 
-def test_stop_hook_runs_the_review_script():
+def test_stop_hooks_run_the_review_and_decide_scripts():
     hooks = json.loads((ROOT / 'hooks/hooks.json').read_text())['hooks']
 
-    command = hooks['Stop'][0]['hooks'][0]['command']
-    assert command == 'sh "${CLAUDE_PLUGIN_ROOT}/hooks/review.sh"'
+    commands = [hook['command'] for hook in hooks['Stop'][0]['hooks']]
+    assert commands == [
+        'sh "${CLAUDE_PLUGIN_ROOT}/hooks/review.sh"',
+        'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/decide.py"',
+    ]
     assert (ROOT / 'hooks/review.sh').is_file()
+    assert (ROOT / 'hooks/decide.py').is_file()
