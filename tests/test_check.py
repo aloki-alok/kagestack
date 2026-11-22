@@ -664,3 +664,90 @@ def test_renamed_function_below_a_grown_neighbour(feature_branch):
     result = ks_check(feature_branch, '--base', 'feature')
 
     assert 'def a2():  (61 lines)' in result.stdout
+
+
+def test_new_long_function_with_the_same_first_line_as_an_old_one_fails(feature_branch):
+    effect = 'useEffect(() => {\n' + '  run()\n' * 78 + '})\n'
+    commit(feature_branch, {'page.tsx': effect})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    second = 'useEffect(() => {\n' + '  load()\n' * 70 + '})\n'
+    commit(feature_branch, {'page.tsx': effect + second})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert 'page.tsx:81: useEffect(() => {  (72 lines)' in result.stdout
+    assert 'page.tsx:1:' not in result.stdout
+
+
+def test_long_function_in_an_untracked_file_fails(feature_branch):
+    write(feature_branch, {'draft.py': function('draft', 61)})
+
+    result = ks_check(feature_branch)
+
+    assert 'draft.py:1: def draft():  (61 lines)' in result.stdout
+
+
+def test_renamed_long_function_with_a_rewritten_end_passes(feature_branch):
+    commit(feature_branch, {'a.py': numbered('a', 64)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    head = numbered('a', 59).replace('def a():', 'def a2():')
+    commit(feature_branch, {'a.py': head + numbered('z', 6)[9:]})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_submodule_bump_beside_a_long_function_does_not_crash(
+    feature_branch, tmp_path_factory
+):
+    other = tmp_path_factory.mktemp('other')
+    git(other, 'init', '-b', 'main')
+    git(
+        other,
+        '-c',
+        'user.name=k',
+        '-c',
+        'user.email=k@k',
+        'commit',
+        '--allow-empty',
+        '-m',
+        'x',
+    )
+    git(
+        feature_branch,
+        '-c',
+        'protocol.file.allow=always',
+        'submodule',
+        'add',
+        str(other),
+        'dep',
+    )
+    git(feature_branch, 'commit', '-m', 'dep')
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+    git(
+        other,
+        '-c',
+        'user.name=k',
+        '-c',
+        'user.email=k@k',
+        'commit',
+        '--allow-empty',
+        '-m',
+        'y',
+    )
+    git(feature_branch / 'dep', 'pull', '-q')
+    commit(feature_branch, {'a.py': function('grows', 70)})
+
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert (result.returncode, result.stderr) == (1, '')
+    assert 'def grows():  (70 lines)' in result.stdout
+
+
+def test_skipped_each_table_fails(feature_branch):
+    commit(feature_branch, {'a.test.ts': "it.skip.each([1, 2])('t %i', (n) => {})\n"})
+
+    result = ks_check(feature_branch)
+
+    assert 'a.test.ts:1: it.skip.each' in result.stdout
