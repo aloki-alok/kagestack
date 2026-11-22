@@ -20,11 +20,18 @@ from ks.setup import ManifestError, read_commands, setup
 from ks.tools import tools
 
 JS_LANGUAGES = ('javascript', 'typescript', 'tsx')
-SKIPPED_JS_TEST = r"""rule: {any: [{pattern: '$TEST($TITLE, $$$REST)'}, {pattern: '$BARE()'}]}
+SKIPPED_JS_TESTS = (
+    r"""rule: {pattern: '$TEST($TITLE, $$$REST)'}
 constraints:
   TEST: {regex: '^((describe|it|test|suite|context|test\.describe)\.(skip|only|fixme)|x(it|test|describe)|f(it|describe))$'}
-  TITLE: {any: [{kind: string}, {kind: template_string}]}
-  BARE: {regex: '^(describe|it|test)\.(skip|fixme)$'}"""
+  TITLE: {any: [{kind: string}, {kind: template_string}]}""",
+    r"""rule: {pattern: '$TEST()'}
+constraints:
+  TEST: {regex: '^(describe|it|test)\.(skip|fixme)$'}""",
+    r"""rule: {pattern: '$TEST($$$)($$$)'}
+constraints:
+  TEST: {regex: '^(describe|it|test)\.(skip|only)\.each$'}""",
+)
 SKIPPED_PYTHON_TEST = (
     r"rule: {any: [{kind: attribute, regex: '^(pytest\.mark\.skip|unittest\.skip)$'},"
     r" {kind: decorator, regex: '^@skip\b'},"
@@ -59,7 +66,11 @@ RULES = as_yaml(
             'rule: {kind: string, inside: {kind: expression_statement}}',
         ),
         ('skipped-test', 'python', SKIPPED_PYTHON_TEST),
-        *(('skipped-test', language, SKIPPED_JS_TEST) for language in JS_LANGUAGES),
+        *(
+            ('skipped-test', language, body)
+            for language in JS_LANGUAGES
+            for body in SKIPPED_JS_TESTS
+        ),
         *FUNCTION_RULES,
     )
 )
@@ -100,6 +111,18 @@ HUNK = re.compile(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', re.MULTILINE)
 PATHS_PER_SCAN = 1000
 MINIFIED_LINE = 10_000
 MINIFIED_SAMPLE = 65_536
+CODE_SUFFIXES = (
+    '.py',
+    '.pyi',
+    '.js',
+    '.jsx',
+    '.mjs',
+    '.cjs',
+    '.ts',
+    '.mts',
+    '.cts',
+    '.tsx',
+)
 
 
 class Hit(NamedTuple):
@@ -171,12 +194,12 @@ def lines_added_in(diff):
     fields = iter(git(*diff, '--raw', '-z', '--no-abbrev').split('\0')[:-1])
     paths, old_blobs = [], {}
     for meta in fields:
-        *_, old_blob, _, status = meta.split()
+        old_mode, _, old_blob, _, status = meta.split()
         path = next(fields)
         if status[0] in 'RC':
             path = next(fields)
         paths.append(path)
-        if old_blob.strip('0'):
+        if old_mode.startswith(':100') and path.endswith(CODE_SUFFIXES):
             old_blobs[path] = old_blob
     patches = FILE_PATCH.split(git(*diff, '--no-color', '-U0'))[1:]
     added, hunks, removed = {}, {}, []
@@ -238,17 +261,41 @@ def length(hit):
     return hit.last_line - hit.first_line + 1
 
 
-def functions_before(diff):
+def read_blobs(blobs):
+    batch = subprocess.run(
+        ['git', 'cat-file', '--batch'],
+        input=''.join(f'{blob}\n' for blob in blobs).encode(),
+        check=True,
+        capture_output=True,
+    ).stdout
+    at = 0
+    for _ in blobs:
+        header_end = batch.index(b'\n', at)
+        size = int(batch[at:header_end].split()[2])
+        at = header_end + 1 + size + 1
+        yield batch[header_end + 1 : at - 1]
+
+
+def functions_by_first_line(hits):
     found = {}
+    for hit in hits:
+        if hit.rule == 'function':
+            found.setdefault(hit.source, []).append((hit.path, hit.first_line, hit))
+    return {source: sorted(matches) for source, matches in found.items()}
+
+
+def functions_before(diff):
     with tempfile.TemporaryDirectory() as into:
-        for path, blob in diff.old_blobs.items():
+        for path, content in zip(
+            diff.old_blobs, read_blobs(diff.old_blobs.values()), strict=True
+        ):
             copy = Path(into, path)
             copy.parent.mkdir(parents=True, exist_ok=True)
-            copy.write_text(git('cat-file', 'blob', blob))
+            copy.write_bytes(content)
         paths = sorted(p for p in diff.old_blobs if not is_minified(Path(into, p)))
-        for hit in find_hits(paths, as_yaml(FUNCTION_RULES), cwd=into):
-            found.setdefault(hit.source, []).append((hit.path, length(hit)))
-    return found
+        return functions_by_first_line(
+            find_hits(paths, as_yaml(FUNCTION_RULES), cwd=into)
+        )
 
 
 def old_line(line, hunks, end):
@@ -257,19 +304,20 @@ def old_line(line, hunks, end):
         if count and start <= line < start + count:
             if end:
                 return old_start + max(old_count, 1) - 1
-            return old_start + (old_count == 0)
+            return old_start
         if (start + count - 1 if count else start) < line:
             shift += old_count - count
     return line + shift
 
 
-def old_length(hit, diff, before):
-    matches = before.get(hit.source, [])
-    same_file = [n for path, n in matches if path == hit.path]
-    if len(same_file) == 1:
-        return same_file[0]
-    if not same_file and len(matches) == 1:
-        return matches[0][1]
+def old_length(hit, diff, before, after):
+    old, new = before.get(hit.source, []), after.get(hit.source, [])
+    old_here = [match for match in old if match[0] == hit.path]
+    new_here = [match for match in new if match[0] == hit.path]
+    if old_here and len(old_here) == len(new_here):
+        return length(old_here[new_here.index((hit.path, hit.first_line, hit))][2])
+    if not old_here and len(old) == len(new) == 1:
+        return length(old[0][2])
     if diff.added[hit.path] is EVERY_LINE:
         return 0
     hunks = diff.hunks.get(hit.path, [])
@@ -277,9 +325,9 @@ def old_length(hit, diff, before):
     return max(last - old_line(hit.first_line, hunks, end=False) + 1, 0)
 
 
-def is_new_finding(hit, diff, before):
+def is_new_finding(hit, diff, before, after):
     if hit.rule == 'function':
-        return length(hit) > FUNCTION_LIMIT >= old_length(hit, diff, before)
+        return length(hit) > FUNCTION_LIMIT >= old_length(hit, diff, before, after)
     lines = range(hit.first_line, hit.last_line + 1)
     return (
         not is_directive(hit)
@@ -356,10 +404,10 @@ def check(args):
     found = list(find_hits(sorted(p for p in diff.added if not is_minified(p))))
     os.chdir(top)
     staged.cleanup()
-    before = {}
+    before, after = {}, functions_by_first_line(found)
     if any(hit.rule == 'function' and length(hit) > FUNCTION_LIMIT for hit in found):
         before = functions_before(diff)
-    hits = sorted(hit for hit in found if is_new_finding(hit, diff, before))
+    hits = sorted(hit for hit in found if is_new_finding(hit, diff, before, after))
     return report(outermost(hits))
 
 
