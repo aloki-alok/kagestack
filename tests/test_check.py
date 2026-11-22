@@ -372,3 +372,18 @@ def test_path_that_leads_outside_the_repo_is_skipped(feature_branch, tmp_path_fa
     result = ks_check(feature_branch, str(feature_branch / 'link.py'))
 
     assert (result.returncode, result.stderr) == (0, '')
+
+
+def test_staged_checks_only_what_the_commit_holds(feature_branch):
+    write(feature_branch, {'scratch.py': 'x = 1  # untracked\n'})
+    write(feature_branch, {'kept.py': 'y = 2  # staged\n'})
+    git(feature_branch, 'add', 'kept.py')
+    write(feature_branch, {'kept.py': 'y = 2\n'})
+    write(feature_branch, {'old.py': '# old\nx = 1  # unstaged\n'})
+
+    result = ks_check(feature_branch, '--staged')
+
+    assert result.returncode == 1
+    assert 'kept.py:1: # staged' in result.stdout
+    assert 'untracked' not in result.stdout
+    assert 'unstaged' not in result.stdout

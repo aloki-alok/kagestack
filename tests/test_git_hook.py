@@ -100,3 +100,45 @@ def test_new_repo_and_first_commit_stay_quiet(home):
         0,
         '',
     )
+
+
+def test_merge_commit_is_not_blocked_by_the_other_branch(home):
+    run(home, KS, 'git-hook')
+    path = repo(home)
+    commit(path, 'f = 1\n')
+    run(path, 'git', 'checkout', '-q', '-b', 'theirs')
+    run(path, 'git', 'commit', '-qam', 'x', '--no-verify')
+    (path / 'app.py').write_text('f = 6  # theirs\n')
+    run(path, 'git', 'commit', '-qam', 'theirs', '--no-verify')
+    run(path, 'git', 'checkout', '-q', 'main')
+    (path / 'app.py').write_text('f = 2\n')
+    run(path, 'git', 'commit', '-qam', 'ours')
+    run(path, 'git', 'merge', '-q', 'theirs')
+    (path / 'app.py').write_text('f = 6  # theirs\n')
+    run(path, 'git', 'add', 'app.py')
+
+    assert run(path, 'git', 'commit', '-qm', 'merge').returncode == 0
+
+
+def test_push_into_a_checked_out_repo_still_updates_its_files(home):
+    run(home, KS, 'git-hook')
+    server = repo(home)
+    commit(server, 'v = 1\n')
+    run(server, 'git', 'config', 'receive.denyCurrentBranch', 'updateInstead')
+    client = home / 'client'
+    run(home, 'git', 'clone', '-q', str(server), str(client))
+    (client / 'app.py').write_text('v = 2\n')
+    run(
+        client,
+        'git',
+        '-c',
+        'user.name=k',
+        '-c',
+        'user.email=k@k',
+        'commit',
+        '-qam',
+        'two',
+    )
+
+    assert run(client, 'git', 'push', '-q', 'origin', 'main').returncode == 0
+    assert (server / 'app.py').read_text() == 'v = 2\n'
