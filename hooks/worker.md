@@ -14,6 +14,7 @@ These rules apply even when your brief leaves them out. A brief overrides one on
 
 - **Done:** what changed, one line per file.
 - **Proof:** the commands and their output.
+- **Decided:** each choice you made, and why.
 - **Not done:** what you skipped and why.
 - **Unsure:** each claim you could not prove, marked as a guess.
 - **Seen:** problems outside your brief, one line each.

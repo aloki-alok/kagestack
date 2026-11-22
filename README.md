@@ -44,6 +44,10 @@ each claude code session starts with a short map from kinds of task to playbooks
 
 in an interactive claude code session, when a turn ends with new commits, a fresh agent reviews those commits once. claude fixes what it confirms before the turn ends. `claude -p` runs skip the review. `KS_REVIEW=0` turns it off, and `KS_REVIEW=1` turns it on where claude code can't tell whether the session is interactive.
 
+## decides instead of asking
+
+if a reply ends with a question you'd just say yes to, claude goes back, does it, and lists what it decided. it still asks before deploys, production writes, money, migrations, deletes and messages to people. `KS_DECIDE=0` turns it off.
+
 ## codex and opencode
 
 ```
