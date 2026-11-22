@@ -62,7 +62,6 @@ ADVICE = (
     ' fix the code instead.'
 )
 EVERY_LINE = range(1, sys.maxsize)
-EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 DEFAULT_BASES = ('origin/HEAD', 'origin/main', 'origin/master', 'main', 'master')
 FILE_PATCH = re.compile(r'^diff --git ', re.MULTILINE)
 HUNK = re.compile(r'^@@ -\S+ \+(\d+)(?:,(\d+))? @@', re.MULTILINE)
@@ -108,9 +107,14 @@ def lines_added_since(base):
 
 
 def lines_staged(into):
-    head = subprocess.run(['git', 'rev-parse', '-q', '--verify', 'HEAD'], check=False)
-    parent = 'HEAD' if head.returncode == 0 else EMPTY_TREE
-    added, removed = lines_added_in(('diff', '--cached', parent))
+    head = subprocess.run(
+        ['git', 'rev-parse', '-q', '--verify', 'HEAD'], check=False, capture_output=True
+    )
+    parent = 'HEAD'
+    if head.returncode:
+        parent = git('hash-object', '-t', 'tree', '/dev/null').strip()
+    diff = ('diff', '--cached', '--ignore-submodules=all', parent)
+    added, removed = lines_added_in(diff)
     added = {path: lines for path, lines in added.items() if lines}
     for path in added:
         copy = Path(into, path)
