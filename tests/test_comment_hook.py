@@ -29,7 +29,18 @@ def repo_with(tmp_path, text):
     repo = tmp_path / 'repo'
     repo.mkdir()
     git(repo, 'init', '-q', '-b', 'main')
-    git(repo, 'commit', '-q', '--allow-empty', '-m', 'base')
+    git(
+        repo,
+        '-c',
+        'user.name=k',
+        '-c',
+        'user.email=k@k',
+        'commit',
+        '-q',
+        '--allow-empty',
+        '-m',
+        'base',
+    )
     (repo / 'app.py').write_text(text)
     return repo
 
