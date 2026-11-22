@@ -64,6 +64,8 @@ it checks only lines your branch added since it left main, so an old repo can st
 
 put the why in a name, a test, or the commit message.
 
+in claude code it also runs on each file claude edits, so a new comment goes back to claude in the same turn. it needs `uv` on the path. `ks check <file>` checks only that file.
+
 ## clear old comments
 
 `kagestack:clear-comments` hands the comments in the code you changed to a reviewer agent that didn't write them. each comment gets a verdict: delete it, change the code so it says the same thing (or open an issue when that change is too big), move a real decision into an ADR, turn its rule into a test, or keep it with proof (a license, docs for an outside caller, a vendor quirk). `ks check --all` counts the comments and lines first, so you know the size of the job.
