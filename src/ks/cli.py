@@ -145,7 +145,9 @@ def was_moved(hit, removed):
 
 
 def check(args):
-    os.chdir(git('rev-parse', '--show-toplevel').strip())
+    top = Path(git('rev-parse', '--show-toplevel').strip()).resolve()
+    only = {str(Path(path).resolve().relative_to(top)) for path in args.paths}
+    os.chdir(top)
     if args.all:
         lines_to_check, removed = every_line_of_every_file(), ''
     elif base := args.base or default_base():
@@ -153,6 +155,8 @@ def check(args):
     else:
         print('ks: no default branch found. pass --base <ref>.', file=sys.stderr)
         return 2
+    if only:
+        lines_to_check = {p: n for p, n in lines_to_check.items() if p in only}
     hits = sorted(
         hit
         for hit in find_hits(sorted(lines_to_check))
@@ -223,8 +227,12 @@ def main():
     setup_command.add_argument(
         '--pin', metavar='COMMIT', help='kagestack commit for CI to run'
     )
-    add_scope(command('ci', ci, 'run the kagestack.toml commands, then ks check'))
-    add_scope(command('check', check, 'fail on comments this branch added'))
+    ci_command = command('ci', ci, 'run the kagestack.toml commands, then ks check')
+    add_scope(ci_command)
+    ci_command.set_defaults(paths=[])
+    check_command = command('check', check, 'fail on comments this branch added')
+    add_scope(check_command)
+    check_command.add_argument('paths', nargs='*', help='check only these files')
     command('doctor', doctor, "check this repo's ks setup")
     command(
         'package',
