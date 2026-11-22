@@ -64,7 +64,11 @@ it checks only lines your branch added since it left main, so an old repo can st
 
 put the why in a name, a test, or the commit message.
 
-in claude code it also runs on each file claude edits, so a new comment goes back to claude in the same turn. it needs `uv` on the path. `ks check <file>` checks only that file.
+## ks git-hook
+
+makes every commit in every repo on this machine run `ks check` on the lines it adds. it works the same for claude code, codex, opencode, cursor and people, since they all commit through git. each repo's own hooks still run after it. a repo with its own hooks folder (husky) skips it, so add `ks check --base HEAD` to that repo's pre-commit.
+
+an agent that can run a command after each edit gets the check sooner, on the file it just changed: `ks check <file>`. the claude code plugin does this.
 
 ## clear old comments
 

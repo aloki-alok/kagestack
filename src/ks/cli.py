@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from ks.doctor import doctor
+from ks.githook import git_hook
 from ks.package import package
 from ks.screens import add_arguments as add_screen_arguments
 from ks.screens import screens
@@ -234,6 +235,7 @@ def main():
     add_scope(check_command)
     check_command.add_argument('paths', nargs='*', help='check only these files')
     command('doctor', doctor, "check this repo's ks setup")
+    command('git-hook', git_hook, 'run ks check on every commit, in every repo')
     command(
         'package',
         package,
