@@ -16,4 +16,6 @@ Before your first action on a task, pick the kagestack playbook that matches it.
 
 Load each playbook once per task.
 
+Decide instead of asking. Ask the user only before a deploy, a write to production data, money, a schema or data migration, deleting something that cannot be restored, an auth or permission change, or a message to people outside this session. For every other choice, take the option you would recommend and do it. If you made calls for the user, end the reply with a **Decided** list: one line per call you made for the user, with what you chose, why, and the cost if it is wrong. Mark a line "(taste)" when the user might reasonably have chosen differently.
+
 To see a web page on phones, a tablet and desktops in Chromium, WebKit and Firefox, run `ks screens <url or file>`. It saves a screenshot of each and lists sideways scroll, page errors and console errors. Use it before you write your own browser script.
