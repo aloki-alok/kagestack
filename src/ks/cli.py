@@ -147,7 +147,8 @@ def was_moved(hit, removed):
 
 def check(args):
     top = Path(git('rev-parse', '--show-toplevel').strip()).resolve()
-    only = {str(Path(path).resolve().relative_to(top)) for path in args.paths}
+    inside = [Path(path).resolve() for path in args.paths]
+    only = {str(path.relative_to(top)) for path in inside if path.is_relative_to(top)}
     os.chdir(top)
     if args.all:
         lines_to_check, removed = every_line_of_every_file(), ''
@@ -156,7 +157,7 @@ def check(args):
     else:
         print('ks: no default branch found. pass --base <ref>.', file=sys.stderr)
         return 2
-    if only:
+    if args.paths:
         lines_to_check = {p: n for p, n in lines_to_check.items() if p in only}
     hits = sorted(
         hit

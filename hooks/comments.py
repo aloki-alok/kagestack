@@ -14,12 +14,12 @@ def main():
     uv = shutil.which('uv')
     if not uv or not os.path.isfile(path):
         return
-    command = [uv, 'run', '--quiet', '--frozen', '--project']
+    command = [uv, 'run', '--quiet', '--frozen', '--no-dev', '--project']
     command += [os.environ['CLAUDE_PLUGIN_ROOT'], 'ks', 'check', path]
     found = subprocess.run(
         command, cwd=os.path.dirname(path), capture_output=True, text=True
     )
-    if found.returncode == 1:
+    if found.returncode == 1 and 'comments on' in found.stdout:
         print(json.dumps({'decision': 'block', 'reason': found.stdout.strip()}))
 
 

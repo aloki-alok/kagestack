@@ -30,7 +30,7 @@ HOOK_NAMES = (
 
 DISPATCH = """#!/bin/sh
 name=$(basename "$0")
-if [ "$name" = pre-commit ]; then
+if [ "$name" = pre-commit ] && git rev-parse -q --verify HEAD > /dev/null; then
   if command -v ks > /dev/null; then
     ks check --base HEAD
     [ $? = 1 ] && exit 1
@@ -38,7 +38,7 @@ if [ "$name" = pre-commit ]; then
     echo "kagestack: ks not found, comment check skipped" >&2
   fi
 fi
-own="$(git rev-parse --git-common-dir)/hooks/$name"
+own="$(git rev-parse --git-common-dir 2> /dev/null)/hooks/$name"
 [ -x "$own" ] && exec "$own" "$@"
 exit 0
 """
