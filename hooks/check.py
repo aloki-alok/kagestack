@@ -19,7 +19,7 @@ def main():
     found = subprocess.run(
         command, cwd=os.path.dirname(path), capture_output=True, text=True
     )
-    if found.returncode == 1 and 'comments on' in found.stdout:
+    if found.returncode == 1 and found.stdout.strip():
         print(json.dumps({'decision': 'block', 'reason': found.stdout.strip()}))
 
 

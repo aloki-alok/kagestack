@@ -25,7 +25,7 @@ if [ "$name" = pre-commit ]; then
     found=$(ks check --staged)
     [ $? = 1 ] && echo "$found" && exit 1
   else
-    echo "kagestack: ks not found, comment check skipped" >&2
+    echo "kagestack: ks not found, check skipped" >&2
   fi
 fi
 if [ -d .git ]; then common=.git; else common=$(git rev-parse --git-common-dir 2> /dev/null); fi

@@ -440,7 +440,9 @@ def function(name, lines):
 def test_new_skipped_test_fails(feature_branch):
     commit(
         feature_branch,
-        {'test_a.py': 'import pytest\n\n\n@pytest.mark.skip\ndef test_a():\n    pass\n'},
+        {
+            'test_a.py': 'import pytest\n\n\n@pytest.mark.skip\ndef test_a():\n    pass\n'
+        },
     )
 
     result = ks_check(feature_branch)
@@ -463,8 +465,7 @@ def test_conditional_skip_passes(feature_branch):
         feature_branch,
         {
             'test_a.py': (
-                '@pytest.mark.skipif(not db, reason="no db")\ndef test_a():\n'
-                '    pass\n'
+                '@pytest.mark.skipif(not db, reason="no db")\ndef test_a():\n    pass\n'
             ),
             'a.test.ts': "test.skip(browserName === 'webkit', 'no')\n",
         },
@@ -512,7 +513,9 @@ def test_function_already_over_the_limit_can_still_change(feature_branch):
     commit(feature_branch, {'a.py': function('legacy', 80)})
     git(feature_branch, 'checkout', '-q', '-b', 'later')
 
-    commit(feature_branch, {'a.py': function('legacy', 81).replace('x = 1', 'y = 2', 3)})
+    commit(
+        feature_branch, {'a.py': function('legacy', 81).replace('x = 1', 'y = 2', 30)}
+    )
     result = ks_check(feature_branch, '--base', 'feature')
 
     assert result.returncode == 0, result.stdout
@@ -526,3 +529,24 @@ def test_long_arrow_function_fails(feature_branch):
 
     assert result.returncode == 1
     assert 'page.tsx:1: const Page = () => {  (62 lines)' in result.stdout
+
+
+def test_long_describe_block_of_short_tests_passes(feature_branch):
+    tests = "  it('runs', () => {\n    run()\n  })\n" * 25
+    commit(feature_branch, {'a.test.ts': f"describe('a', () => {{\n{tests}}})\n"})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_long_function_inside_a_long_one_is_reported_once(feature_branch):
+    inner = '    .map((row) => {\n' + '      run()\n' * 61 + '    })\n'
+    page = 'function Page() {\n  return rows\n' + inner + '}\n'
+    commit(feature_branch, {'page.tsx': page})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'page.tsx:1: function Page() {' in result.stdout
+    assert '.map' not in result.stdout

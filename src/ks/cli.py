@@ -19,27 +19,37 @@ from ks.screens import screens
 from ks.setup import ManifestError, read_commands, setup
 from ks.tools import tools
 
-RULES = """
-id: comment
-language: python
-rule: {kind: comment}
----
-id: comment
-language: javascript
-rule: {kind: comment}
----
-id: comment
-language: typescript
-rule: {kind: comment}
----
-id: comment
-language: tsx
-rule: {kind: comment}
----
-id: docstring
-language: python
-rule: {kind: string, inside: {kind: expression_statement}}
-"""
+JS_LANGUAGES = ('javascript', 'typescript', 'tsx')
+SKIPPED_JS_TEST = r"""rule: {pattern: '$TEST($TITLE, $$$REST)'}
+constraints:
+  TEST: {regex: '^((describe|it|test|suite|context|test\.describe)\.(skip|only)|x(it|test|describe)|f(it|describe))$'}
+  TITLE: {any: [{kind: string}, {kind: template_string}]}"""
+JS_FUNCTION = (
+    'rule: {any: [{kind: function_declaration}, {kind: generator_function_declaration},'
+    ' {kind: method_definition}, {kind: arrow_function}, {kind: function_expression}],'
+    ' not: {inside: {kind: arguments, inside: {kind: call_expression,'
+    r" regex: '^(describe|suite|context|test\.describe)\b'}}}}"
+)
+RULES = '\n---\n'.join(
+    f'id: {rule}\nlanguage: {language}\n{body}'
+    for rule, language, body in (
+        ('comment', 'python', 'rule: {kind: comment}'),
+        *(('comment', language, 'rule: {kind: comment}') for language in JS_LANGUAGES),
+        (
+            'comment',
+            'python',
+            'rule: {kind: string, inside: {kind: expression_statement}}',
+        ),
+        (
+            'skipped-test',
+            'python',
+            r"rule: {kind: attribute, regex: '^(pytest\.mark\.skip|unittest\.skip)$'}",
+        ),
+        *(('skipped-test', language, SKIPPED_JS_TEST) for language in JS_LANGUAGES),
+        ('function', 'python', 'rule: {kind: function_definition}'),
+        *(('function', language, JS_FUNCTION) for language in JS_LANGUAGES),
+    )
+)
 TOOL_DIRECTIVE = re.compile(
     r'///\s*<reference'
     r'|(#|//|/\*+)\s*('
@@ -61,10 +71,19 @@ ADVICE = (
     'a suppression must name the rule it silences. if that rule guards correctness,'
     ' fix the code instead.'
 )
+FUNCTION_LIMIT = 60
+FINDINGS = {
+    'comment': ADVICE,
+    'skipped-test': (
+        'fix the test or the code. delete a test that no longer applies,'
+        ' do not skip it.'
+    ),
+    'function': 'split it into steps whose names say what each one does.',
+}
 EVERY_LINE = range(1, sys.maxsize)
 DEFAULT_BASES = ('origin/HEAD', 'origin/main', 'origin/master', 'main', 'master')
 FILE_PATCH = re.compile(r'^diff --git ', re.MULTILINE)
-HUNK = re.compile(r'^@@ -\S+ \+(\d+)(?:,(\d+))? @@', re.MULTILINE)
+HUNK = re.compile(r'^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', re.MULTILINE)
 PATHS_PER_SCAN = 1000
 
 
@@ -73,6 +92,14 @@ class Hit(NamedTuple):
     first_line: int
     last_line: int
     text: str
+    rule: str
+    source: str
+
+
+class Diff(NamedTuple):
+    added: dict
+    replaced: dict
+    removed: str
 
 
 def git(*args):
@@ -83,7 +110,7 @@ def git(*args):
 
 def every_line_of_every_file():
     paths = git('ls-files', '-z', '--cached', '--others', '--exclude-standard')
-    return {path: EVERY_LINE for path in paths.split('\0') if path}
+    return Diff({path: EVERY_LINE for path in paths.split('\0') if path}, {}, '')
 
 
 def default_base():
@@ -100,10 +127,10 @@ def default_base():
 
 def lines_added_since(base):
     merge_base = git('merge-base', base, 'HEAD').strip()
-    added, removed = lines_added_in(('diff', merge_base))
+    diff = lines_added_in(('diff', merge_base))
     untracked = git('ls-files', '-z', '--others', '--exclude-standard')
-    added.update({path: EVERY_LINE for path in untracked.split('\0') if path})
-    return added, removed
+    diff.added.update({path: EVERY_LINE for path in untracked.split('\0') if path})
+    return diff
 
 
 def lines_staged(into):
@@ -114,29 +141,30 @@ def lines_staged(into):
     if head.returncode:
         parent = git('hash-object', '-t', 'tree', '/dev/null').strip()
     diff = ('diff', '--cached', '--ignore-submodules=all', parent)
-    added, removed = lines_added_in(diff)
-    added = {path: lines for path, lines in added.items() if lines}
+    staged = lines_added_in(diff)
+    added = {path: lines for path, lines in staged.added.items() if lines}
     for path in added:
         copy = Path(into, path)
         copy.parent.mkdir(parents=True, exist_ok=True)
         copy.write_text(git('show', f':{path}'))
-    return added, removed
+    return staged._replace(added=added)
 
 
 def lines_added_in(diff):
     diff = (*diff, '--find-renames', '--no-ext-diff')
     paths = git(*diff, '--name-only', '-z').split('\0')[:-1]
     patches = FILE_PATCH.split(git(*diff, '--no-color', '-U0'))[1:]
-    added, removed = {}, []
+    added, replaced, removed = {}, {}, []
     for path, patch in zip(paths, patches, strict=True):
-        added[path] = set()
+        added[path], replaced[path] = set(), []
         for hunk in HUNK.finditer(patch):
-            start, count = int(hunk[1]), int(hunk[2] or 1)
+            start, count = int(hunk[2]), int(hunk[3] or 1)
             added[path].update(range(start, start + count))
+            replaced[path].append((start, int(hunk[1] or 1)))
         if first_hunk := HUNK.search(patch):
             body = patch[first_hunk.start() :].splitlines()
             removed += [f'{line[1:].rstrip()}\n' for line in body if line[:1] == '-']
-    return added, ''.join(removed)
+    return Diff(added, replaced, ''.join(removed))
 
 
 def find_hits(paths):
@@ -147,12 +175,13 @@ def find_hits(paths):
         output = subprocess.run(scan, check=True, capture_output=True, text=True)
         for line in output.stdout.splitlines():
             match = json.loads(line)
-            yield Hit(
-                path=match['file'],
-                first_line=match['range']['start']['line'] + 1,
-                last_line=match['range']['end']['line'] + 1,
-                text=match['text'],
-            )
+            first = match['range']['start']['line'] + 1
+            last = match['range']['end']['line'] + 1
+            source = match['lines'].splitlines()[0].strip()
+            text = match['text']
+            if match['ruleId'] == 'skipped-test':
+                last, text = first, source
+            yield Hit(match['file'], first, last, text, match['ruleId'], source)
 
 
 def is_directive(hit):
@@ -168,6 +197,71 @@ def was_moved(hit, removed):
     return all(f'{line.strip()}\n' in removed for line in hit.text.splitlines())
 
 
+def grew_past_the_limit(hit, diff):
+    length = hit.last_line - hit.first_line + 1
+    lines = range(hit.first_line, hit.last_line + 1)
+    added = sum(1 for line in lines if line in diff.added[hit.path])
+    replaced = diff.replaced.get(hit.path, [])
+    removed = sum(count for start, count in replaced if start in lines)
+    return length > FUNCTION_LIMIT >= length - added + removed
+
+
+def is_new_finding(hit, diff):
+    if hit.rule == 'function':
+        return grew_past_the_limit(hit, diff) and not was_moved(hit, diff.removed)
+    lines = range(hit.first_line, hit.last_line + 1)
+    return (
+        not is_directive(hit)
+        and not was_moved(hit, diff.removed)
+        and any(line in diff.added[hit.path] for line in lines)
+    )
+
+
+def outermost(hits):
+    functions = {}
+    for hit in hits:
+        if hit.rule == 'function':
+            functions.setdefault(hit.path, []).append(hit)
+    return [
+        hit
+        for hit in hits
+        if hit.rule != 'function'
+        or not any(
+            other != hit
+            and other.first_line <= hit.first_line <= hit.last_line <= other.last_line
+            for other in functions[hit.path]
+        )
+    ]
+
+
+def describe(hit):
+    if hit.rule == 'function':
+        return f'{hit.source}  ({hit.last_line - hit.first_line + 1} lines)'
+    return hit.text.splitlines()[0]
+
+
+def summary(rule, hits):
+    if rule == 'comment':
+        lines = sum(hit.last_line - hit.first_line + 1 for hit in hits)
+        return f'{len(hits)} comments on {lines} lines'
+    if rule == 'skipped-test':
+        return f'{len(hits)} skipped or focused tests'
+    return f'{len(hits)} functions over {FUNCTION_LIMIT} lines'
+
+
+def report(hits):
+    for hit in hits:
+        print(f'{hit.path}:{hit.first_line}: {describe(hit)}')
+    for rule, advice in FINDINGS.items():
+        found = [hit for hit in hits if hit.rule == rule]
+        if found:
+            print(summary(rule, found))
+            print(advice)
+    if not hits:
+        print('no new comments, skipped tests or long functions')
+    return 1 if hits else 0
+
+
 def check(args):
     top = Path(git('rev-parse', '--show-toplevel').strip()).resolve()
     inside = [Path(path).resolve() for path in args.paths]
@@ -175,38 +269,25 @@ def check(args):
     os.chdir(top)
     staged = tempfile.TemporaryDirectory()
     if args.all:
-        lines_to_check, removed = every_line_of_every_file(), ''
+        diff = every_line_of_every_file()
     elif args.staged:
-        lines_to_check, removed = lines_staged(staged.name)
+        diff = lines_staged(staged.name)
         os.chdir(staged.name)
     elif base := args.base or default_base():
-        lines_to_check, removed = lines_added_since(base)
+        diff = lines_added_since(base)
     else:
         print('ks: no default branch found. pass --base <ref>.', file=sys.stderr)
         return 2
     if args.paths:
-        lines_to_check = {p: n for p, n in lines_to_check.items() if p in only}
-    hits = sorted(
-        hit
-        for hit in find_hits(sorted(lines_to_check))
-        if not is_directive(hit)
-        and not was_moved(hit, removed)
-        and any(
-            line in lines_to_check[hit.path]
-            for line in range(hit.first_line, hit.last_line + 1)
+        diff = diff._replace(
+            added={path: n for path, n in diff.added.items() if path in only}
         )
+    hits = sorted(
+        hit for hit in find_hits(sorted(diff.added)) if is_new_finding(hit, diff)
     )
     os.chdir(top)
     staged.cleanup()
-    for hit in hits:
-        print(f'{hit.path}:{hit.first_line}: {hit.text.splitlines()[0]}')
-    if hits:
-        lines = sum(hit.last_line - hit.first_line + 1 for hit in hits)
-        print(f'{len(hits)} comments on {lines} lines')
-        print(ADVICE)
-        return 1
-    print('no new comments')
-    return 0
+    return report(outermost(hits))
 
 
 def ci(args):

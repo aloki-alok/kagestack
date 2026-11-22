@@ -60,7 +60,12 @@ writes the playbooks to `.agents/skills`, where codex and opencode find them. `k
 
 fails on comments in python, js, jsx, ts and tsx, docstrings included. tool directives that name their rule pass, like `noqa: F401`, `type: ignore[assignment]`, `eslint-disable-next-line no-undef` and `@ts-expect-error`. a bare `noqa`, `type: ignore`, `pyright: ignore`, `eslint-disable`, `@ts-ignore` or `@ts-nocheck` fails, because it silences the checks that catch real bugs too.
 
-it checks only lines your branch added since it left main, so an old repo can start today. a comment you moved or kept on a changed line is not new. `--all` checks every line, `--base <ref>` picks the starting point.
+it also fails on two kinds of new mess:
+
+- a skipped or focused test: `@pytest.mark.skip`, `unittest.skip`, `it.skip(...)`, `it.only(...)`, `xit(...)` and the like. a conditional skip like `skipif` passes. fix the test or the code, or delete a test that no longer applies.
+- a function this change pushes past 60 lines. a function that was already longer can still change, so a small fix in old code is not blocked. a `describe` block counts as a list of tests, not a function.
+
+it checks only lines your branch added since it left main, so an old repo can start today. a comment you moved or kept on a changed line is not new. minified files (a line over 10,000 characters) are skipped. `--all` checks every line, `--base <ref>` picks the starting point.
 
 put the why in a name, a test, or the commit message.
 
