@@ -387,3 +387,47 @@ def test_staged_checks_only_what_the_commit_holds(feature_branch):
     assert 'kept.py:1: # staged' in result.stdout
     assert 'untracked' not in result.stdout
     assert 'unstaged' not in result.stdout
+
+
+def test_staged_submodule_does_not_turn_the_check_off(feature_branch, tmp_path_factory):
+    other = tmp_path_factory.mktemp('other')
+    git(other, 'init', '-b', 'main')
+    git(
+        other,
+        '-c',
+        'user.name=k',
+        '-c',
+        'user.email=k@k',
+        'commit',
+        '--allow-empty',
+        '-m',
+        'x',
+    )
+    git(
+        feature_branch,
+        '-c',
+        'protocol.file.allow=always',
+        'submodule',
+        'add',
+        str(other),
+        'sm',
+    )
+    write(feature_branch, {'q.py': 'x = 1  # sneaks in\n'})
+    git(feature_branch, 'add', 'q.py')
+
+    result = ks_check(feature_branch, '--staged')
+
+    assert result.returncode == 1
+    assert 'q.py:1: # sneaks in' in result.stdout
+
+
+def test_staged_first_commit_in_a_sha256_repo(tmp_path, monkeypatch):
+    monkeypatch.setenv('GIT_CONFIG_GLOBAL', '/dev/null')
+    git(tmp_path, 'init', '--object-format=sha256', '-b', 'main')
+    write(tmp_path, {'app.py': 'x = 1  # first\n'})
+    git(tmp_path, 'add', 'app.py')
+
+    result = ks_check(tmp_path, '--staged')
+
+    assert result.returncode == 1
+    assert result.stdout.startswith('app.py:1: # first')
