@@ -40,11 +40,23 @@ def test_offer_without_a_question_mark_is_sent_back():
 
 
 def test_trailing_blank_lines_and_markdown_do_not_hide_the_ask():
-    assert sent_back(stop('Done with step 1.\n\n**Should I start step 2?**\n\n'))
+    assert sent_back(stop('Done with step 1.\n\n**Merge it now?**\n\n'))
 
 
 def test_reply_that_ends_with_a_statement_finishes():
     assert stop('Fixed, 1,213 stuck calls now dial. The cause was the reaper.') == ''
+
+
+def test_closing_line_that_asks_nothing_finishes():
+    assert stop('Shipped.\n\nLet me know if anything breaks.') == ''
+
+
+def test_quoted_question_finishes():
+    assert stop('Done.\n\nThe dialog now reads "Do you want to retry?"') == ''
+
+
+def test_question_answered_in_the_same_paragraph_finishes():
+    assert stop('Should I use uv or pip? Use uv, it is faster.') == ''
 
 
 def test_question_earlier_in_the_reply_does_not_count():

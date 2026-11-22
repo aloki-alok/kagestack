@@ -141,14 +141,24 @@ def test_plugin_path_with_quotes_stays_valid_json(tmp_path):
     assert str(odd / 'hooks/review.md') in context(stop(repo, root=odd, env=ATTENDED))
 
 
-def test_fixes_made_after_the_review_count_as_reviewed(tmp_path):
+def test_fixes_made_during_the_review_wait_for_the_next_turn(tmp_path):
     repo, _, _ = branch_with_work(tmp_path)
-    stop(repo, env=ATTENDED)
-    commit(repo, 'fix')
     continuing = DONE.replace('"stop_hook_active":false', '"stop_hook_active":true')
-    stop(repo, continuing, env=ATTENDED)
+    stop(repo, env=ATTENDED)
+    fix = commit(repo, 'fix')
 
-    assert stop(repo, env=ATTENDED) == ''
+    assert stop(repo, continuing, env=ATTENDED) == ''
+    assert fix[:12] in context(stop(repo, env=ATTENDED))
+
+
+def test_review_left_unfinished_does_not_hide_later_commits(tmp_path):
+    repo, _, _ = branch_with_work(tmp_path)
+    continuing = DONE.replace('"stop_hook_active":false', '"stop_hook_active":true')
+    stop(repo, env=ATTENDED)
+    stop(repo, env=ATTENDED)
+    later = commit(repo, 'later')
+
+    assert later[:12] in context(stop(repo, continuing, env=ATTENDED))
 
 
 def test_branch_off_a_local_main_with_no_remote(tmp_path):

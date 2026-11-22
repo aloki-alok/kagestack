@@ -11,12 +11,10 @@ asked=$(git rev-parse --git-path kagestack-review-asked) || exit 0
 reviewed=$(cat "$marker" 2>/dev/null)
 descends() { git merge-base --is-ancestor "$1" "$2" 2>/dev/null; }
 
-if [ -f "$asked" ] && printf '%s' "$input" | grep -q '"stop_hook_active" *: *true'; then
+if printf '%s' "$input" | grep -q '"stop_hook_active" *: *true'; then
+  [ -f "$asked" ] && rm -f "$asked" && exit 0
+else
   rm -f "$asked"
-  if [ -n "$reviewed" ] && descends "$reviewed" "$head"; then
-    echo "$head" > "$marker"
-  fi
-  exit 0
 fi
 printf '%s' "$input" | grep -q '"background_tasks" *: *\[ *[^] ]' && exit 0
 
