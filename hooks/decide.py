@@ -11,17 +11,10 @@ OFFER = re.compile(
 )
 
 DECIDE = (
-    'Your reply ends by asking the user to choose or approve. '
-    'Keep the question only if the answer leads to a deploy, a write to production '
-    'data, money, a schema or data migration, deleting something that cannot be '
-    'restored, an auth or permission change, a message to people outside this '
-    'session, or a product choice only the user can make. Then end the turn again '
-    'with the question in one line. '
-    'Otherwise take the option you would recommend and do it now. '
-    'End the reply with a **Decided** list, one line per call you made for the user: '
-    'what you chose, why, and the cost if it is wrong. '
-    'Mark a line "(taste)" when the user might reasonably have chosen differently. '
-    'KS_DECIDE=0 turns this off.'
+    'Your reply ends with a question. Keep it only for a deploy, a production '
+    "write, money, a migration, a delete you can't undo, a message to people, "
+    'or if the user asked you to check first. Otherwise do what you would '
+    'recommend, and list your calls under **Decided**.'
 )
 
 
