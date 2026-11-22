@@ -568,3 +568,79 @@ def test_minified_file_is_skipped(repo):
 
     assert 'app.py:1: # mine' in result.stdout
     assert 'lib.min.js' not in result.stdout
+
+
+def test_long_function_moved_to_a_new_file_with_one_change_passes(feature_branch):
+    commit(feature_branch, {'big.py': function('legacy', 80) + function('rest', 5)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    moved = function('legacy', 80).replace('x = 1', 'x = 2', 1)
+    commit(feature_branch, {'big.py': function('rest', 5), 'legacy.py': moved})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_edit_from_the_decorator_into_a_long_function_passes(feature_branch):
+    old = '@cache\n' + function('legacy', 80)
+    commit(feature_branch, {'a.py': old})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    new = '@cache(1)\n' + function('legacy2', 80).replace('x = 1', 'y = 2', 40)
+    commit(feature_branch, {'a.py': new})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_growth_hidden_by_a_deleted_neighbour_fails(feature_branch):
+    commit(feature_branch, {'a.py': function('grows', 55) + function('gone', 10)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    commit(feature_branch, {'a.py': function('grows', 62)})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert 'def grows():  (62 lines)' in result.stdout
+
+
+def test_renamed_function_that_grows_beside_a_changed_neighbour(feature_branch):
+    commit(feature_branch, {'a.py': function('a', 50) + function('b', 80)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    b = function('b', 80).replace('x = 1', 'y = 2', 10)
+    commit(feature_branch, {'a.py': function('a2', 61) + b})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert 'def a2():  (61 lines)' in result.stdout
+    assert 'def b()' not in result.stdout
+
+
+def test_unconditional_skips_in_other_forms_fail(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'a.spec.ts': "test('a', () => {\n  test.skip()\n})\ntest.fixme('b', () => {})\n",
+            'test_a.py': (
+                'from unittest import skip\n\n\n@skip("later")\ndef test_a():\n'
+                '    pass\n\n\ndef test_b():\n    pytest.skip("later")\n'
+            ),
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert 'a.spec.ts:2: test.skip()' in result.stdout
+    assert "a.spec.ts:4: test.fixme('b', () => {})" in result.stdout
+    assert 'test_a.py:4: @skip("later")' in result.stdout
+    assert 'test_a.py:10: pytest.skip("later")' in result.stdout
+
+
+def test_skip_inside_a_condition_passes(feature_branch):
+    commit(
+        feature_branch,
+        {'test_a.py': 'def test_a():\n    if not db:\n        pytest.skip("no db")\n'},
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
