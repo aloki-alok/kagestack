@@ -55,9 +55,17 @@ def git_hook(args):
         hook = folder / name
         hook.write_text(DISPATCH)
         hook.chmod(0o755)
-    subprocess.run(
-        ['git', 'config', '--global', 'core.hooksPath', str(folder)], check=True
-    )
+    if not current:
+        saved = subprocess.run(
+            ['git', 'config', '--global', 'core.hooksPath', str(folder)],
+            capture_output=True,
+            text=True,
+        )
+        if saved.returncode:
+            print(f'ks: git could not save the setting. {saved.stderr.strip()}')
+            print('if your git config is read-only (Nix home-manager), add this:')
+            print(f'  core.hooksPath = {folder}')
+            return 1
     print(f'every commit now runs ks check. hooks: {folder}')
     print("each repo's own hooks still run after it.")
     print('undo: git config --global --unset core.hooksPath')
