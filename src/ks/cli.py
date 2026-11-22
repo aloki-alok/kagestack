@@ -173,7 +173,7 @@ def find_hits(paths):
         batch = paths[start : start + PATHS_PER_SCAN]
         scan = [ast_grep, 'scan', '--inline-rules', RULES, '--json=stream', *batch]
         output = subprocess.run(scan, check=True, capture_output=True, text=True)
-        for line in output.stdout.splitlines():
+        for line in output.stdout.split('\n')[:-1]:
             match = json.loads(line)
             first = match['range']['start']['line'] + 1
             last = match['range']['end']['line'] + 1
