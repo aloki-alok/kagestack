@@ -7,10 +7,12 @@ case "${KS_REVIEW:-}" in
 esac
 head=$(git rev-parse --verify --quiet HEAD) || exit 0
 marker=$(git rev-parse --git-path kagestack-reviewed) || exit 0
+asked=$(git rev-parse --git-path kagestack-review-asked) || exit 0
 reviewed=$(cat "$marker" 2>/dev/null)
 descends() { git merge-base --is-ancestor "$1" "$2" 2>/dev/null; }
 
-if printf '%s' "$input" | grep -q '"stop_hook_active" *: *true'; then
+if [ -f "$asked" ] && printf '%s' "$input" | grep -q '"stop_hook_active" *: *true'; then
+  rm -f "$asked"
   if [ -n "$reviewed" ] && descends "$reviewed" "$head"; then
     echo "$head" > "$marker"
   fi
@@ -31,6 +33,7 @@ if [ -n "$reviewed" ] && descends "$base" "$reviewed" && descends "$reviewed" "$
 fi
 [ "$from" = "$head" ] && exit 0
 echo "$head" > "$marker"
+: > "$asked"
 
 brief=$(printf '%s' "$CLAUDE_PLUGIN_ROOT/hooks/review.md" | sed 's/\\/\\\\/g; s/"/\\"/g')
 range=$(printf '%.12s..%.12s' "$from" "$head")

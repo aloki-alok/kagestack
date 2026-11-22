@@ -74,9 +74,10 @@ def test_switch_turns_it_off_or_on(tmp_path):
     assert context(stop(repo, env={'KS_REVIEW': '1'}))
 
 
-def test_no_review_while_continuing_for_a_stop_hook(tmp_path):
+def test_no_second_review_while_continuing_for_its_own(tmp_path):
     repo, _, _ = branch_with_work(tmp_path)
     continuing = DONE.replace('"stop_hook_active":false', '"stop_hook_active":true')
+    stop(repo, env=ATTENDED)
 
     assert stop(repo, continuing, env=ATTENDED) == ''
 
@@ -183,3 +184,13 @@ def test_merging_the_base_in_offers_only_branch_work(tmp_path):
     head = commit(repo, 'after')
 
     assert f'{upstream[:12]}..{head[:12]}' in context(stop(repo, env=ATTENDED))
+
+
+def test_commits_made_while_another_hook_continues_get_reviewed(tmp_path):
+    repo, _, _ = branch_with_work(tmp_path)
+    continuing = DONE.replace('"stop_hook_active":false', '"stop_hook_active":true')
+    stop(repo, env=ATTENDED)
+    stop(repo, continuing, env=ATTENDED)
+    later = commit(repo, 'later')
+
+    assert later[:12] in context(stop(repo, continuing, env=ATTENDED))
