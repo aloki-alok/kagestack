@@ -362,3 +362,13 @@ def test_paths_limit_the_check_to_those_files(feature_branch):
     assert result.returncode == 1
     assert 'old.py:2: # mine' in result.stdout
     assert 'theirs' not in result.stdout
+
+
+def test_path_that_leads_outside_the_repo_is_skipped(feature_branch, tmp_path_factory):
+    outside = tmp_path_factory.mktemp('outside') / 'shared.py'
+    outside.write_text('x = 1  # elsewhere\n')
+    (feature_branch / 'link.py').symlink_to(outside)
+
+    result = ks_check(feature_branch, str(feature_branch / 'link.py'))
+
+    assert (result.returncode, result.stderr) == (0, '')

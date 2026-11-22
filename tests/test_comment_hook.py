@@ -54,3 +54,26 @@ def test_file_outside_a_repo_is_silent(tmp_path):
     loose.write_text('x = 1  # note\n')
 
     assert edited(loose, tmp_path) == ''
+
+
+def test_uv_failure_is_not_a_finding(tmp_path):
+    repo = repo_with(tmp_path, 'x = 1  # note\n')
+    bin_dir = tmp_path / 'bin'
+    bin_dir.mkdir()
+    (bin_dir / 'uv').write_text('#!/bin/sh\nexit 1\n')
+    (bin_dir / 'uv').chmod(0o755)
+    event = {'tool_input': {'file_path': str(repo / 'app.py')}}
+
+    result = subprocess.run(
+        ['python3', HOOK],
+        input=json.dumps(event),
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            'CLAUDE_PLUGIN_ROOT': str(ROOT),
+            'PATH': f'{bin_dir}:/usr/bin:/bin',
+        },
+    )
+
+    assert result.stdout == ''

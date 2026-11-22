@@ -73,3 +73,30 @@ def test_other_global_hooks_folder_is_left_alone(home):
     assert result.returncode == 1
     hooks_path = run(home, 'git', 'config', '--global', 'core.hooksPath')
     assert hooks_path.stdout.strip() == '/elsewhere'
+
+
+def test_new_repo_and_first_commit_stay_quiet(home):
+    run(home, KS, 'git-hook')
+    path = home / 'fresh'
+    path.mkdir()
+
+    started = run(path, 'git', 'init', '-q', '-b', 'main')
+    (path / 'app.py').write_text('retries = 3\n')
+    run(path, 'git', 'add', 'app.py')
+    first = run(
+        path,
+        'git',
+        '-c',
+        'user.name=k',
+        '-c',
+        'user.email=k@k',
+        'commit',
+        '-qm',
+        'first',
+    )
+
+    assert (started.stderr, first.returncode, first.stdout + first.stderr) == (
+        '',
+        0,
+        '',
+    )
