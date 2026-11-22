@@ -603,12 +603,18 @@ def test_growth_hidden_by_a_deleted_neighbour_fails(feature_branch):
     assert 'def grows():  (62 lines)' in result.stdout
 
 
+def numbered(name, lines, start=0):
+    body = ''.join(f'    {name}{n} = {n}\n' for n in range(start, start + lines - 1))
+    return f'def {name}():\n{body}'
+
+
 def test_renamed_function_that_grows_beside_a_changed_neighbour(feature_branch):
-    commit(feature_branch, {'a.py': function('a', 50) + function('b', 80)})
+    commit(feature_branch, {'a.py': numbered('a', 50) + numbered('b', 80)})
     git(feature_branch, 'checkout', '-q', '-b', 'later')
 
-    b = function('b', 80).replace('x = 1', 'y = 2', 10)
-    commit(feature_branch, {'a.py': function('a2', 61) + b})
+    renamed = numbered('a', 61).replace('def a():', 'def a2():')
+    changed = numbered('b', 10, start=100) + numbered('b', 70, start=10)[9:]
+    commit(feature_branch, {'a.py': renamed + changed})
     result = ks_check(feature_branch, '--base', 'feature')
 
     assert 'def a2():  (61 lines)' in result.stdout
@@ -644,3 +650,17 @@ def test_skip_inside_a_condition_passes(feature_branch):
     result = ks_check(feature_branch)
 
     assert result.returncode == 0, result.stdout
+
+
+def test_renamed_function_below_a_grown_neighbour(feature_branch):
+    commit(feature_branch, {'a.py': numbered('b', 80) + numbered('a', 50)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    grown = numbered('b', 80) + ''.join(f'    c{n} = {n}\n' for n in range(30))
+    head, tail = numbered('a', 50).split('    a25 = 25\n')
+    middle = ''.join(f'    d{n} = {n}\n' for n in range(11))
+    renamed = (head + middle + '    a25 = 25\n' + tail).replace('def a():', 'def a2():')
+    commit(feature_branch, {'a.py': grown + renamed})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert 'def a2():  (61 lines)' in result.stdout
