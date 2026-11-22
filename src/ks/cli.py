@@ -85,6 +85,8 @@ DEFAULT_BASES = ('origin/HEAD', 'origin/main', 'origin/master', 'main', 'master'
 FILE_PATCH = re.compile(r'^diff --git ', re.MULTILINE)
 HUNK = re.compile(r'^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', re.MULTILINE)
 PATHS_PER_SCAN = 1000
+MINIFIED_LINE = 10_000
+MINIFIED_SAMPLE = 65_536
 
 
 class Hit(NamedTuple):
@@ -165,6 +167,15 @@ def lines_added_in(diff):
             body = patch[first_hunk.start() :].splitlines()
             removed += [f'{line[1:].rstrip()}\n' for line in body if line[:1] == '-']
     return Diff(added, replaced, ''.join(removed))
+
+
+def is_minified(path):
+    try:
+        with open(path, 'rb') as file:
+            sample = file.read(MINIFIED_SAMPLE)
+    except OSError:
+        return False
+    return any(len(line) > MINIFIED_LINE for line in sample.split(b'\n'))
 
 
 def find_hits(paths):
@@ -283,7 +294,9 @@ def check(args):
             added={path: n for path, n in diff.added.items() if path in only}
         )
     hits = sorted(
-        hit for hit in find_hits(sorted(diff.added)) if is_new_finding(hit, diff)
+        hit
+        for hit in find_hits(sorted(p for p in diff.added if not is_minified(p)))
+        if is_new_finding(hit, diff)
     )
     os.chdir(top)
     staged.cleanup()
