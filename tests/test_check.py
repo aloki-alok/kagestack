@@ -558,3 +558,13 @@ def test_unicode_line_break_inside_code_does_not_crash(repo):
     result = ks_check(repo, '--all')
 
     assert (result.returncode, result.stderr) == (0, '')
+
+
+def test_minified_file_is_skipped(repo):
+    bundle = 'function a(){/* keep */return 1}' * 400
+    commit(repo, {'lib.min.js': bundle + '\n', 'app.py': 'x = 1  # mine\n'})
+
+    result = ks_check(repo, '--all')
+
+    assert 'app.py:1: # mine' in result.stdout
+    assert 'lib.min.js' not in result.stdout
