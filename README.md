@@ -64,6 +64,12 @@ it checks only lines your branch added since it left main, so an old repo can st
 
 put the why in a name, a test, or the commit message.
 
+## ks git-hook
+
+makes every commit in every repo on this machine run `ks check` on the lines it adds. merges and cherry-picks are skipped. it works the same for claude code, codex, opencode, cursor and people, since they all commit through git. each repo's own hooks still run after it. a repo with its own hooks folder (husky) skips it, so add `ks check --staged` to that repo's pre-commit.
+
+an agent that can run a command after each edit gets the check sooner, on the file it just changed: `ks check <file>`. the claude code plugin does this.
+
 ## clear old comments
 
 `kagestack:clear-comments` hands the comments in the code you changed to a reviewer agent that didn't write them. each comment gets a verdict: delete it, change the code so it says the same thing (or open an issue when that change is too big), move a real decision into an ADR, turn its rule into a test, or keep it with proof (a license, docs for an outside caller, a vendor quirk). `ks check --all` counts the comments and lines first, so you know the size of the job.

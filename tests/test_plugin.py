@@ -60,6 +60,16 @@ def test_every_agent_a_playbook_starts_exists_under_its_name():
         assert text.startswith(f'---\nname: {name}\n')
 
 
+def test_edit_hook_runs_the_comment_check():
+    hooks = json.loads((ROOT / 'hooks/hooks.json').read_text())['hooks']
+
+    entry = hooks['PostToolUse'][0]
+    assert entry['matcher'] == 'Edit|Write|MultiEdit'
+    assert entry['hooks'][0]['command'] == (
+        'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/comments.py"'
+    )
+
+
 def test_stop_hooks_run_the_review_and_decide_scripts():
     hooks = json.loads((ROOT / 'hooks/hooks.json').read_text())['hooks']
 
