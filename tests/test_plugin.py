@@ -66,7 +66,7 @@ def test_edit_hook_runs_the_comment_check():
     entry = hooks['PostToolUse'][0]
     assert entry['matcher'] == 'Edit|Write|MultiEdit'
     assert entry['hooks'][0]['command'] == (
-        'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/comments.py"'
+        'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/check.py"'
     )
 
 

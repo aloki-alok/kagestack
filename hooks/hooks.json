@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/comments.py\""
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/check.py\""
           }
         ]
       }

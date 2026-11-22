@@ -349,7 +349,7 @@ def test_comment_like_strings_pass(repo):
     result = ks_check(repo, '--all')
 
     assert result.returncode == 0, result.stdout
-    assert result.stdout == 'no new comments\n'
+    assert result.stdout == 'no new comments, skipped tests or long functions\n'
 
 
 def test_paths_limit_the_check_to_those_files(feature_branch):
@@ -431,3 +431,98 @@ def test_staged_first_commit_in_a_sha256_repo(tmp_path, monkeypatch):
 
     assert result.returncode == 1
     assert result.stdout.startswith('app.py:1: # first')
+
+
+def function(name, lines):
+    return f'def {name}():\n' + '    x = 1\n' * (lines - 1)
+
+
+def test_new_skipped_test_fails(feature_branch):
+    commit(
+        feature_branch,
+        {'test_a.py': 'import pytest\n\n\n@pytest.mark.skip\ndef test_a():\n    pass\n'},
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'test_a.py:4: @pytest.mark.skip' in result.stdout
+
+
+def test_new_focused_js_test_fails(feature_branch):
+    commit(feature_branch, {'a.test.ts': "it.only('a', () => {\n  run()\n})\n"})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert "a.test.ts:1: it.only('a', () => {" in result.stdout
+
+
+def test_conditional_skip_passes(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'test_a.py': (
+                '@pytest.mark.skipif(not db, reason="no db")\ndef test_a():\n'
+                '    pass\n'
+            ),
+            'a.test.ts': "test.skip(browserName === 'webkit', 'no')\n",
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_old_skip_with_a_new_line_in_its_test_passes(feature_branch):
+    commit(feature_branch, {'a.test.ts': "it.skip('a', () => {\n  run()\n})\n"})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    commit(
+        feature_branch, {'a.test.ts': "it.skip('a', () => {\n  run()\n  more()\n})\n"}
+    )
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_new_function_over_the_limit_fails(feature_branch):
+    commit(feature_branch, {'a.py': function('short', 60) + function('long', 61)})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'a.py:61: def long():  (61 lines)' in result.stdout
+    assert 'short' not in result.stdout
+
+
+def test_function_that_grows_past_the_limit_fails(feature_branch):
+    commit(feature_branch, {'a.py': function('grows', 60)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    commit(feature_branch, {'a.py': function('grows', 61)})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 1
+    assert 'def grows():  (61 lines)' in result.stdout
+
+
+def test_function_already_over_the_limit_can_still_change(feature_branch):
+    commit(feature_branch, {'a.py': function('legacy', 80)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    commit(feature_branch, {'a.py': function('legacy', 81).replace('x = 1', 'y = 2', 3)})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_long_arrow_function_fails(feature_branch):
+    body = '  run()\n' * 60
+    commit(feature_branch, {'page.tsx': f'const Page = () => {{\n{body}}}\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'page.tsx:1: const Page = () => {  (62 lines)' in result.stdout
