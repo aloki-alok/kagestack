@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
-HOOK = ROOT / 'hooks/comments.py'
+HOOK = ROOT / 'hooks/check.py'
 
 
 def git(repo, *args):
@@ -88,3 +88,11 @@ def test_uv_failure_is_not_a_finding(tmp_path):
     )
 
     assert result.stdout == ''
+
+
+def test_edit_that_skips_a_test_is_sent_back(tmp_path):
+    repo = repo_with(tmp_path, '@pytest.mark.skip\ndef test_a():\n    pass\n')
+
+    served = json.loads(edited(repo / 'app.py', tmp_path))
+
+    assert 'app.py:1: @pytest.mark.skip' in served['reason']

@@ -349,7 +349,7 @@ def test_comment_like_strings_pass(repo):
     result = ks_check(repo, '--all')
 
     assert result.returncode == 0, result.stdout
-    assert result.stdout == 'no new comments\n'
+    assert result.stdout == 'no new comments, skipped tests or long functions\n'
 
 
 def test_paths_limit_the_check_to_those_files(feature_branch):
@@ -431,3 +431,323 @@ def test_staged_first_commit_in_a_sha256_repo(tmp_path, monkeypatch):
 
     assert result.returncode == 1
     assert result.stdout.startswith('app.py:1: # first')
+
+
+def function(name, lines):
+    return f'def {name}():\n' + '    x = 1\n' * (lines - 1)
+
+
+def test_new_skipped_test_fails(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'test_a.py': 'import pytest\n\n\n@pytest.mark.skip\ndef test_a():\n    pass\n'
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'test_a.py:4: @pytest.mark.skip' in result.stdout
+
+
+def test_new_focused_js_test_fails(feature_branch):
+    commit(feature_branch, {'a.test.ts': "it.only('a', () => {\n  run()\n})\n"})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert "a.test.ts:1: it.only('a', () => {" in result.stdout
+
+
+def test_conditional_skip_passes(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'test_a.py': (
+                '@pytest.mark.skipif(not db, reason="no db")\ndef test_a():\n    pass\n'
+            ),
+            'a.test.ts': "test.skip(browserName === 'webkit', 'no')\n",
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_old_skip_with_a_new_line_in_its_test_passes(feature_branch):
+    commit(feature_branch, {'a.test.ts': "it.skip('a', () => {\n  run()\n})\n"})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    commit(
+        feature_branch, {'a.test.ts': "it.skip('a', () => {\n  run()\n  more()\n})\n"}
+    )
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_new_function_over_the_limit_fails(feature_branch):
+    commit(feature_branch, {'a.py': function('short', 60) + function('long', 61)})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'a.py:61: def long():  (61 lines)' in result.stdout
+    assert 'short' not in result.stdout
+
+
+def test_function_that_grows_past_the_limit_fails(feature_branch):
+    commit(feature_branch, {'a.py': function('grows', 60)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    commit(feature_branch, {'a.py': function('grows', 61)})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 1
+    assert 'def grows():  (61 lines)' in result.stdout
+
+
+def test_function_already_over_the_limit_can_still_change(feature_branch):
+    commit(feature_branch, {'a.py': function('legacy', 80)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    commit(
+        feature_branch, {'a.py': function('legacy', 81).replace('x = 1', 'y = 2', 30)}
+    )
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_long_arrow_function_fails(feature_branch):
+    body = '  run()\n' * 60
+    commit(feature_branch, {'page.tsx': f'const Page = () => {{\n{body}}}\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'page.tsx:1: const Page = () => {  (62 lines)' in result.stdout
+
+
+def test_long_describe_block_of_short_tests_passes(feature_branch):
+    tests = "  it('runs', () => {\n    run()\n  })\n" * 25
+    commit(feature_branch, {'a.test.ts': f"describe('a', () => {{\n{tests}}})\n"})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_long_function_inside_a_long_one_is_reported_once(feature_branch):
+    inner = '    .map((row) => {\n' + '      run()\n' * 61 + '    })\n'
+    page = 'function Page() {\n  return rows\n' + inner + '}\n'
+    commit(feature_branch, {'page.tsx': page})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'page.tsx:1: function Page() {' in result.stdout
+    assert '.map' not in result.stdout
+
+
+def test_unicode_line_break_inside_code_does_not_crash(repo):
+    commit(repo, {'lib.min.js': 'function f() { return "a\x85b" }\n'})
+
+    result = ks_check(repo, '--all')
+
+    assert (result.returncode, result.stderr) == (0, '')
+
+
+def test_minified_file_is_skipped(repo):
+    bundle = 'function a(){/* keep */return 1}' * 400
+    commit(repo, {'lib.min.js': bundle + '\n', 'app.py': 'x = 1  # mine\n'})
+
+    result = ks_check(repo, '--all')
+
+    assert 'app.py:1: # mine' in result.stdout
+    assert 'lib.min.js' not in result.stdout
+
+
+def test_long_function_moved_to_a_new_file_with_one_change_passes(feature_branch):
+    commit(feature_branch, {'big.py': function('legacy', 80) + function('rest', 5)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    moved = function('legacy', 80).replace('x = 1', 'x = 2', 1)
+    commit(feature_branch, {'big.py': function('rest', 5), 'legacy.py': moved})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_edit_from_the_decorator_into_a_long_function_passes(feature_branch):
+    old = '@cache\n' + function('legacy', 80)
+    commit(feature_branch, {'a.py': old})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    new = '@cache(1)\n' + function('legacy2', 80).replace('x = 1', 'y = 2', 40)
+    commit(feature_branch, {'a.py': new})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_growth_hidden_by_a_deleted_neighbour_fails(feature_branch):
+    commit(feature_branch, {'a.py': function('grows', 55) + function('gone', 10)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    commit(feature_branch, {'a.py': function('grows', 62)})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert 'def grows():  (62 lines)' in result.stdout
+
+
+def numbered(name, lines, start=0):
+    body = ''.join(f'    {name}{n} = {n}\n' for n in range(start, start + lines - 1))
+    return f'def {name}():\n{body}'
+
+
+def test_renamed_function_that_grows_beside_a_changed_neighbour(feature_branch):
+    commit(feature_branch, {'a.py': numbered('a', 50) + numbered('b', 80)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    renamed = numbered('a', 61).replace('def a():', 'def a2():')
+    changed = numbered('b', 10, start=100) + numbered('b', 70, start=10)[9:]
+    commit(feature_branch, {'a.py': renamed + changed})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert 'def a2():  (61 lines)' in result.stdout
+    assert 'def b()' not in result.stdout
+
+
+def test_unconditional_skips_in_other_forms_fail(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'a.spec.ts': "test('a', () => {\n  test.skip()\n})\ntest.fixme('b', () => {})\n",
+            'test_a.py': (
+                'from unittest import skip\n\n\n@skip("later")\ndef test_a():\n'
+                '    pass\n\n\ndef test_b():\n    pytest.skip("later")\n'
+            ),
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert 'a.spec.ts:2: test.skip()' in result.stdout
+    assert "a.spec.ts:4: test.fixme('b', () => {})" in result.stdout
+    assert 'test_a.py:4: @skip("later")' in result.stdout
+    assert 'test_a.py:10: pytest.skip("later")' in result.stdout
+
+
+def test_skip_inside_a_condition_passes(feature_branch):
+    commit(
+        feature_branch,
+        {'test_a.py': 'def test_a():\n    if not db:\n        pytest.skip("no db")\n'},
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_renamed_function_below_a_grown_neighbour(feature_branch):
+    commit(feature_branch, {'a.py': numbered('b', 80) + numbered('a', 50)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    grown = numbered('b', 80) + ''.join(f'    c{n} = {n}\n' for n in range(30))
+    head, tail = numbered('a', 50).split('    a25 = 25\n')
+    middle = ''.join(f'    d{n} = {n}\n' for n in range(11))
+    renamed = (head + middle + '    a25 = 25\n' + tail).replace('def a():', 'def a2():')
+    commit(feature_branch, {'a.py': grown + renamed})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert 'def a2():  (61 lines)' in result.stdout
+
+
+def test_new_long_function_with_the_same_first_line_as_an_old_one_fails(feature_branch):
+    effect = 'useEffect(() => {\n' + '  run()\n' * 78 + '})\n'
+    commit(feature_branch, {'page.tsx': effect})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    second = 'useEffect(() => {\n' + '  load()\n' * 70 + '})\n'
+    commit(feature_branch, {'page.tsx': effect + second})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert 'page.tsx:81: useEffect(() => {  (72 lines)' in result.stdout
+    assert 'page.tsx:1:' not in result.stdout
+
+
+def test_long_function_in_an_untracked_file_fails(feature_branch):
+    write(feature_branch, {'draft.py': function('draft', 61)})
+
+    result = ks_check(feature_branch)
+
+    assert 'draft.py:1: def draft():  (61 lines)' in result.stdout
+
+
+def test_renamed_long_function_with_a_rewritten_end_passes(feature_branch):
+    commit(feature_branch, {'a.py': numbered('a', 64)})
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+
+    head = numbered('a', 59).replace('def a():', 'def a2():')
+    commit(feature_branch, {'a.py': head + numbered('z', 6)[9:]})
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_submodule_bump_beside_a_long_function_does_not_crash(
+    feature_branch, tmp_path_factory
+):
+    other = tmp_path_factory.mktemp('other')
+    git(other, 'init', '-b', 'main')
+    git(
+        other,
+        '-c',
+        'user.name=k',
+        '-c',
+        'user.email=k@k',
+        'commit',
+        '--allow-empty',
+        '-m',
+        'x',
+    )
+    git(
+        feature_branch,
+        '-c',
+        'protocol.file.allow=always',
+        'submodule',
+        'add',
+        str(other),
+        'dep',
+    )
+    git(feature_branch, 'commit', '-m', 'dep')
+    git(feature_branch, 'checkout', '-q', '-b', 'later')
+    git(
+        other,
+        '-c',
+        'user.name=k',
+        '-c',
+        'user.email=k@k',
+        'commit',
+        '--allow-empty',
+        '-m',
+        'y',
+    )
+    git(feature_branch / 'dep', 'pull', '-q')
+    commit(feature_branch, {'a.py': function('grows', 70)})
+
+    result = ks_check(feature_branch, '--base', 'feature')
+
+    assert (result.returncode, result.stderr) == (1, '')
+    assert 'def grows():  (70 lines)' in result.stdout
+
+
+def test_skipped_each_table_fails(feature_branch):
+    commit(feature_branch, {'a.test.ts': "it.skip.each([1, 2])('t %i', (n) => {})\n"})
+
+    result = ks_check(feature_branch)
+
+    assert 'a.test.ts:1: it.skip.each' in result.stdout

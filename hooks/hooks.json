@@ -1,5 +1,5 @@
 {
-  "description": "point each session at the matching playbook, give plain worker subagents the worker rules, send back an edit that adds a comment, review new commits when an interactive turn ends, and send a reply that ends by asking back to decide",
+  "description": "point each session at the matching playbook, give plain worker subagents the worker rules, send back an edit that adds a comment, a skipped test or a function over 60 lines, review new commits when an interactive turn ends, and send a reply that ends by asking back to decide",
   "hooks": {
     "SessionStart": [
       {
@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/comments.py\""
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/check.py\""
           }
         ]
       }
