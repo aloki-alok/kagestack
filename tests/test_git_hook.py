@@ -75,6 +75,33 @@ def test_other_global_hooks_folder_is_left_alone(home):
     assert hooks_path.stdout.strip() == '/elsewhere'
 
 
+def test_read_only_git_config_gets_the_line_to_add(home, monkeypatch):
+    locked = home / 'nix'
+    locked.mkdir()
+    (locked / 'config').write_text('')
+    locked.chmod(0o555)
+    monkeypatch.setenv('GIT_CONFIG_GLOBAL', str(locked / 'config'))
+
+    result = run(home, KS, 'git-hook')
+
+    assert result.returncode == 1
+    assert 'Traceback' not in result.stderr
+    assert f'core.hooksPath = {home}/config/kagestack/git-hooks' in result.stdout
+
+
+def test_rerun_with_hooks_path_already_set_skips_the_config_write(home):
+    run(home, KS, 'git-hook')
+    config = Path(os.environ['GIT_CONFIG_GLOBAL'])
+    config.parent.chmod(0o555)
+
+    try:
+        result = run(home, KS, 'git-hook')
+    finally:
+        config.parent.chmod(0o755)
+
+    assert result.returncode == 0
+
+
 def test_new_repo_and_first_commit_stay_quiet(home):
     run(home, KS, 'git-hook')
     path = home / 'fresh'
