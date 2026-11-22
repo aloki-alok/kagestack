@@ -3,9 +3,6 @@ import subprocess
 from pathlib import Path
 
 HOOK_NAMES = (
-    'applypatch-msg',
-    'pre-applypatch',
-    'post-applypatch',
     'pre-commit',
     'pre-merge-commit',
     'prepare-commit-msg',
@@ -15,30 +12,24 @@ HOOK_NAMES = (
     'post-checkout',
     'post-merge',
     'pre-push',
-    'pre-receive',
-    'update',
-    'proc-receive',
-    'post-receive',
-    'post-update',
-    'reference-transaction',
-    'push-to-checkout',
-    'pre-auto-gc',
     'post-rewrite',
-    'sendemail-validate',
-    'post-index-change',
 )
 
 DISPATCH = """#!/bin/sh
-name=$(basename "$0")
-if [ "$name" = pre-commit ] && git rev-parse -q --verify HEAD > /dev/null; then
-  if command -v ks > /dev/null; then
-    ks check --base HEAD
-    [ $? = 1 ] && exit 1
+name=${0##*/}
+if [ "$name" = pre-commit ]; then
+  git_dir=$(git rev-parse --git-dir)
+  if [ -e "$git_dir/MERGE_HEAD" ] || [ -e "$git_dir/CHERRY_PICK_HEAD" ] || [ -e "$git_dir/REVERT_HEAD" ]; then
+    :
+  elif command -v ks > /dev/null; then
+    found=$(ks check --staged)
+    [ $? = 1 ] && echo "$found" && exit 1
   else
     echo "kagestack: ks not found, comment check skipped" >&2
   fi
 fi
-own="$(git rev-parse --git-common-dir 2> /dev/null)/hooks/$name"
+if [ -d .git ]; then common=.git; else common=$(git rev-parse --git-common-dir 2> /dev/null); fi
+own="$common/hooks/$name"
 [ -x "$own" ] && exec "$own" "$@"
 exit 0
 """

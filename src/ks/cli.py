@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import sysconfig
+import tempfile
 from pathlib import Path
 from typing import NamedTuple
 
@@ -61,6 +62,7 @@ ADVICE = (
     ' fix the code instead.'
 )
 EVERY_LINE = range(1, sys.maxsize)
+EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 DEFAULT_BASES = ('origin/HEAD', 'origin/main', 'origin/master', 'main', 'master')
 FILE_PATCH = re.compile(r'^diff --git ', re.MULTILINE)
 HUNK = re.compile(r'^@@ -\S+ \+(\d+)(?:,(\d+))? @@', re.MULTILINE)
@@ -99,7 +101,26 @@ def default_base():
 
 def lines_added_since(base):
     merge_base = git('merge-base', base, 'HEAD').strip()
-    diff = ('diff', merge_base, '--find-renames', '--no-ext-diff')
+    added, removed = lines_added_in(('diff', merge_base))
+    untracked = git('ls-files', '-z', '--others', '--exclude-standard')
+    added.update({path: EVERY_LINE for path in untracked.split('\0') if path})
+    return added, removed
+
+
+def lines_staged(into):
+    head = subprocess.run(['git', 'rev-parse', '-q', '--verify', 'HEAD'], check=False)
+    parent = 'HEAD' if head.returncode == 0 else EMPTY_TREE
+    added, removed = lines_added_in(('diff', '--cached', parent))
+    added = {path: lines for path, lines in added.items() if lines}
+    for path in added:
+        copy = Path(into, path)
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        copy.write_text(git('show', f':{path}'))
+    return added, removed
+
+
+def lines_added_in(diff):
+    diff = (*diff, '--find-renames', '--no-ext-diff')
     paths = git(*diff, '--name-only', '-z').split('\0')[:-1]
     patches = FILE_PATCH.split(git(*diff, '--no-color', '-U0'))[1:]
     added, removed = {}, []
@@ -111,8 +132,6 @@ def lines_added_since(base):
         if first_hunk := HUNK.search(patch):
             body = patch[first_hunk.start() :].splitlines()
             removed += [f'{line[1:].rstrip()}\n' for line in body if line[:1] == '-']
-    untracked = git('ls-files', '-z', '--others', '--exclude-standard')
-    added.update({path: EVERY_LINE for path in untracked.split('\0') if path})
     return added, ''.join(removed)
 
 
@@ -150,8 +169,12 @@ def check(args):
     inside = [Path(path).resolve() for path in args.paths]
     only = {str(path.relative_to(top)) for path in inside if path.is_relative_to(top)}
     os.chdir(top)
+    staged = tempfile.TemporaryDirectory()
     if args.all:
         lines_to_check, removed = every_line_of_every_file(), ''
+    elif args.staged:
+        lines_to_check, removed = lines_staged(staged.name)
+        os.chdir(staged.name)
     elif base := args.base or default_base():
         lines_to_check, removed = lines_added_since(base)
     else:
@@ -169,6 +192,8 @@ def check(args):
             for line in range(hit.first_line, hit.last_line + 1)
         )
     )
+    os.chdir(top)
+    staged.cleanup()
     for hit in hits:
         print(f'{hit.path}:{hit.first_line}: {hit.text.splitlines()[0]}')
     if hits:
@@ -202,6 +227,7 @@ def add_scope(command):
     scope.add_argument(
         '--base', help='count lines added since this ref (default: the main branch)'
     )
+    return scope
 
 
 def main():
@@ -231,9 +257,11 @@ def main():
     )
     ci_command = command('ci', ci, 'run the kagestack.toml commands, then ks check')
     add_scope(ci_command)
-    ci_command.set_defaults(paths=[])
+    ci_command.set_defaults(paths=[], staged=False)
     check_command = command('check', check, 'fail on comments this branch added')
-    add_scope(check_command)
+    add_scope(check_command).add_argument(
+        '--staged', action='store_true', help='check only what the next commit holds'
+    )
     check_command.add_argument('paths', nargs='*', help='check only these files')
     command('doctor', doctor, "check this repo's ks setup")
     command('git-hook', git_hook, 'run ks check on every commit, in every repo')
