@@ -550,3 +550,11 @@ def test_long_function_inside_a_long_one_is_reported_once(feature_branch):
     assert result.returncode == 1
     assert 'page.tsx:1: function Page() {' in result.stdout
     assert '.map' not in result.stdout
+
+
+def test_unicode_line_break_inside_code_does_not_crash(repo):
+    commit(repo, {'lib.min.js': 'function f() { return "a\x85b" }\n'})
+
+    result = ks_check(repo, '--all')
+
+    assert (result.returncode, result.stderr) == (0, '')
