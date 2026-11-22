@@ -63,7 +63,7 @@ fails on comments in python, js, jsx, ts and tsx, docstrings included. tool dire
 it also fails on two kinds of new mess:
 
 - a skipped or focused test: `@pytest.mark.skip`, `unittest.skip`, `it.skip(...)`, `it.only(...)`, `xit(...)` and the like. a conditional skip like `skipif` passes. fix the test or the code, or delete a test that no longer applies.
-- a function this change pushes past 60 lines. a function that was already longer can still change, so a small fix in old code is not blocked. a `describe` block counts as a list of tests, not a function.
+- a function this change pushes past 60 lines. a function that was already longer can still change or move to another file, so a small fix in old code is not blocked. a `describe` block counts as a list of tests, not a function.
 
 it checks only lines your branch added since it left main, so an old repo can start today. a comment you moved or kept on a changed line is not new. minified files (a line over 10,000 characters) are skipped. `--all` checks every line, `--base <ref>` picks the starting point.
 
