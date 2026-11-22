@@ -350,3 +350,15 @@ def test_comment_like_strings_pass(repo):
 
     assert result.returncode == 0, result.stdout
     assert result.stdout == 'no new comments\n'
+
+
+def test_paths_limit_the_check_to_those_files(feature_branch):
+    commit(
+        feature_branch, {'old.py': '# old\nx = 1  # mine\n', 'other.py': '# theirs\n'}
+    )
+
+    result = ks_check(feature_branch, str(feature_branch / 'old.py'))
+
+    assert result.returncode == 1
+    assert 'old.py:2: # mine' in result.stdout
+    assert 'theirs' not in result.stdout
