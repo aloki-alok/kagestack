@@ -276,6 +276,14 @@ def test_tool_directives_pass(repo):
                 'const j = <div>{/* prettier-ignore */}</div>;\n'
                 '//# sourceMappingURL=b.js.map\n'
             ),
+            'c.test.tsx': (
+                '// @vitest-environment jsdom\n'
+                'test("x", () => {});\n'
+            ),
+            'd.test.ts': (
+                '/** @jest-environment node */\n'
+                'test("y", () => {});\n'
+            ),
         },
     )
 

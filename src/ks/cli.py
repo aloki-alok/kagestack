@@ -80,6 +80,7 @@ TOOL_DIRECTIVE = re.compile(
     r'noqa|type:\s*ignore|pyright:|pylint:|fmt:\s*(on|off|skip)|pragma: no cover'
     r'|eslint-(disable|enable|env)|@ts-(check|expect-error|ignore|nocheck)'
     r'|prettier-ignore|biome-ignore|#\s*sourceMappingURL=|SPDX-License-Identifier:'
+    r'|@(vitest|jest)-environment\b'
     r')',
     re.IGNORECASE,
 )
