@@ -70,7 +70,7 @@ kagestack changes almost every day, and I kept losing track of why. So each rele
 
 ## 0.27.0 · Nov 22 · Commits run `ks check`, for any agent
 
-- **Before:** `ks check` ran only in CI, and most repos don't have that job yet. One of three retry tasks still committed a comment.
+- **Before:** `ks check` ran only in CI, and the repos I work in didn't have that job. One of three retry tasks still committed a comment.
 - **After:** A hook checks each file Claude edits. `ks git-hook` checks staged lines on every commit, for any agent or person.
 - **Why:** Nothing checked comments during a session, and the edit hook only reaches Claude Code.
 - **Proof:** No eval.
