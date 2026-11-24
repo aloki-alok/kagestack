@@ -2,7 +2,7 @@
 
 checks and playbooks so coding agents write clean code without babysitting. (｀・ω・´)ゞ
 
-- **playbooks**: one per job (bug fix, feature, refactor, clear comments, perf, investigate, explain, pr, handoff, scout). every step ends in proof.
+- **playbooks**: one per job (bug fix, feature, refactor, garden, clear comments, perf, investigate, explain, pr, handoff, scout). every step ends in proof.
 - **checks**: `ks check` fails a pull request that adds comments to code, or a suppression that names no rule.
 
 ## does it help

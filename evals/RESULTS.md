@@ -20,6 +20,8 @@ a fresh agent that never read this repo built the tasks and hidden tests. it was
 | 2026-11-21 | Sonnet 5.5 | 10 | `explain` form per item vs no-dropdown version: no code names 5/5 vs 5/5 | screen changes as mocks 5/5 vs 0/5, real numbers kept and gaps marked 5/5 vs 0/5, no arrow chains 5/5 vs 0/5 | 1.09x |
 | 2026-11-21 | Sonnet 5.5 | 10 | `explain` concept pages built up in steps vs form per item: pictures built up 0/5 vs 0/5 | plain definition first 2/5 vs 0/5, median 850 vs 237 words | 1.4x, not shipped |
 | 2026-11-24 | Sonnet 5.5 | 30 | session text that reads the ask first vs 0.29.0: right fix or cause 10/10 vs 10/10, no added work 14/15 vs 13/15 | named its reading 5/10 vs 6/10, expert word glossed 9/10 vs 9/10, raw log quoted 4/5 vs 5/5 | 1.0x, not shipped |
+| 2026-11-24 | Sonnet 5.5 | 20 | `garden` vs 0.29.0, asks that name the mistake (money math, timezones): guard catches the old bugs 10/10 vs 10/10, live bugs fixed 10/10 vs 10/10 | cites 2 past fixes 8/10 vs 3/10 | 1.0x |
+| 2026-11-24 | Sonnet 5.5 | 20 | `garden` vs 0.29.0, asks that don't name it: "keeps breaking in the same ways" guard catches the old bugs 5/5 vs 2/5, nothing else touched 5/5 vs 3/5; "the old code here is bad" 0/5 vs 0/5 | cites 2 past fixes 5/5 vs 0/5 | 1.16x |
 
 what changed after each:
 - the first one found `bug-fix` changed the bad-input error in 8/10 runs. the playbook now keeps what callers rely on.
@@ -30,6 +32,7 @@ what changed after each:
 - the sixth found one run of five still put a sentence above the steps, and code locations ran together with no label.
 - the seventh found one page of five gave the bug's cause only as an arrow chain, never as a sentence. the next change picks each item's form from its content instead of one template.
 - the eighth tied on every outcome: sonnet already picks the likely job and keeps scope on these asks. 8 of 10 runs read "see how we can reuse" as asking for advice, not a build. a retest needs real past asks that agents got wrong.
+- the ninth and tenth shipped `garden` on its unnamed-mistake win. "the old code here is bad" went to `refactor` in all 10 runs, and none read the history, so that wording is not garden's yet.
 - the eighth found raw codes inside a "today" mock, numbers left as plain text, and "no number" repeated on every card. the next change draws every number, keeps mocks to what the user reads, and shapes concept and comparison pages too.
 - the ninth found that change made no picture series in any run and let concept pages grow to 850 words. reverted. building pictures up needs a tool or a check, not a sentence.
 
