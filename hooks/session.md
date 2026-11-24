@@ -5,6 +5,7 @@ Before your first action on a task, pick the kagestack playbook that matches it.
 - Something broken, failing or wrong: `kagestack:bug-fix`.
 - A new feature or changed behavior: `kagestack:feature`.
 - A cleanup, restructure, rename or dead-code removal: `kagestack:refactor`.
+- The same kind of bug keeps coming back, or a repo's code should get better as a whole: `kagestack:garden`.
 - Removing comments or lint suppressions, or `ks check` failed on them: `kagestack:clear-comments`.
 - A how, why or where question about code: `kagestack:investigate`.
 - Something slow, or a speedup claim: `kagestack:perf`.
