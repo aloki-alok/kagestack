@@ -28,7 +28,7 @@ const style = read(join(here, 'site.css')) + '\n' + read(themeFile)
 const script = read(join(here, 'site.js'))
 const mark = read(join(here, 'mark.svg')).trim()
 const themeIcon = read(join(here, 'theme-icon.svg')).trim()
-const favicon = 'data:image/svg+xml,' + encodeURIComponent(mark.replace('<path', '<style>path{color:#0a0a0a}@media (prefers-color-scheme:dark){path{color:#f5f5f5}}</style><path'))
+const favicon = 'data:image/svg+xml,' + encodeURIComponent(mark.replace('<rect', '<style>.t{fill:#0a0a0a}.g{fill:#fff}@media (prefers-color-scheme:dark){.t{fill:#f5f5f5}.g{fill:#0a0a0a}}</style><rect'))
 
 writeFileSync(out, `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">

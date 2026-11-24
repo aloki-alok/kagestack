@@ -83,4 +83,4 @@ body{background-image:var(--texture,none)}
 h1,.prose h2{text-wrap:balance}
 @media (max-width:520px){.logo .t{display:none}.tools{gap:6px}.btn{padding:6px 9px}.btn kbd{display:none}}
 @media (max-width:980px){.hero{padding-bottom:40px}}
-.logo{align-items:center}.logo .mk{display:block;width:32px;height:32px;color:var(--ink)}.logo .mk svg,.btn.icon svg{display:block;width:100%;height:100%}.btn.icon{width:34px;padding:8px}
+.logo{align-items:center}.logo .mk{display:block;width:32px;height:32px}.logo .mk .t{fill:var(--ink)}.logo .mk .g{fill:var(--paper)}.logo .mk svg,.btn.icon svg{display:block;width:100%;height:100%}.btn.icon{width:34px;padding:8px}
