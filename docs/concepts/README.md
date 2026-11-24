@@ -14,16 +14,16 @@ flowchart TD
 
 # How kagestack works
 
-kagestack keeps coding agents doing careful work without you watching. Playbooks tell the agent how to do each kind of job. Checks catch the mistakes that a written rule alone doesn't stop.
+One of my Claude Code sessions ran for 24 days and got compacted 153 times. In another, a decision we'd agreed on got undone right after a compaction. kagestack is the set of habits and guard rails I built so agents do careful work even when nobody's watching that closely.
 
 ## Playbooks guide the work
 
-When a session starts, the agent gets a short map from kinds of task to playbooks: a bug goes to `bug-fix`, a new feature to `feature`, and so on. Each playbook is a list of steps, and each step ends in something the agent must show, such as a failing test before the fix. You never type a command. See [Playbooks](playbooks.md).
+Think of a good kitchen: nobody re-invents how to make the stock each morning, there's a card on the wall. A playbook is that card for one kind of job. When a session starts, the agent gets a short map, so a bug goes to `bug-fix`, a new feature to `feature`, and so on. Every step ends in something the agent has to show, like a failing test before the fix. You never type a command. See [Playbooks](playbooks.md).
 
 ## Checks catch what text can't
 
-A rule written in a prompt gets skipped when the context fills up. A check runs every time. So when a mistake keeps coming back, it becomes a check, not more text. Hooks send back an edit that adds a code comment, a reply that asks you something it could decide, and commits nobody reviewed. See [What runs on its own](hooks.md), [How work gets reviewed](review.md) and [The ks command](ks-command.md).
+A rule in a prompt is a sticky note. It works until the context fills up and the note falls off. A check runs every single time. So when a mistake keeps coming back, it becomes a check, not more text. Hooks send back an edit that adds a code comment, a reply that asks you something the agent could decide, and commits nobody reviewed. See [What runs on its own](hooks.md), [How work gets reviewed](review.md) and [The ks command](ks-command.md).
 
 ## Every change is tested before it ships
 
-A new playbook or rule ships only if a blind test shows that agents do better with it. Some ideas tie and don't ship. See [How a change earns its place](testing-changes.md) and the [changes, release by release](changes.md).
+I don't trust a rule just because it sounds right. A new playbook or rule ships only if a blind test shows agents actually do better with it, and some of my ideas tied and never shipped. See [How a change earns its place](testing-changes.md) and the [changes, release by release](changes.md).

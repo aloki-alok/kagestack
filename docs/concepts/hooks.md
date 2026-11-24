@@ -16,11 +16,11 @@ sequenceDiagram
 
 # What runs on its own
 
-Six hooks run inside every Claude Code session that has kagestack installed. None of them needs you to type anything. Each one either adds a short note to what the agent reads, or sends its work back with the reason.
+Six hooks run inside every Claude Code session that has kagestack installed, kind of like the checks a pilot runs without thinking about them. You never type anything. Each hook either adds a short note to what the agent reads, or sends its work back with the reason.
 
 ## When a session starts
 
-The agent reads the map from kinds of task to playbooks, so it loads the right one without being asked. The same note tells it to decide instead of asking you. It asks only before a deploy, a production write, money, a migration, a delete it can't undo, or a message to people.
+The agent reads the map from kinds of task to playbooks, so it picks up the right one without being asked. The same note tells it to decide instead of asking you, because a pile of "should I go ahead?" questions is pretty much the opposite of help. It asks only before a deploy, a production write, money, a migration, a delete it can't undo, or a message to people.
 
 ## When a subagent starts
 
