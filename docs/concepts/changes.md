@@ -12,7 +12,7 @@ Each release says what an agent or you saw before it, what changed, why, and the
 
 ## 0.31.0 · Nov 24 · A docs site explains each hook, playbook and release
 
-- **Before:** The reason for each change lived only in commit messages and an eval table. Two features merged without a version bump, and nobody noticed for hours.
+- **Before:** The reason for each change lived only in commit messages and an eval table. Two features merged without a version bump, so installed copies missed them for about 2.5 hours.
 - **After:** aloki-alok.github.io/kagestack explains what runs, how review works, and why each release shipped. A test fails a release that has no entry on this page.
 - **Why:** The owner wants to understand each change without reading commits.
 - **Proof:** No eval.
@@ -68,7 +68,7 @@ Each release says what an agent or you saw before it, what changed, why, and the
 - **Why:** A config managed by home-manager is a read-only symlink, so `git config --global` fails.
 - **Proof:** No eval.
 
-## 0.27.0 · Nov 22 · Every commit runs `ks check`, for any agent
+## 0.27.0 · Nov 22 · Commits run `ks check`, for any agent
 
 - **Before:** `ks check` ran only in CI, and no OmniDim repo has that job. One of three retry tasks still committed a comment.
 - **After:** A hook checks each file Claude edits. `ks git-hook` checks staged lines on every commit, for any agent or person.

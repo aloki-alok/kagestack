@@ -36,4 +36,4 @@ If the turn made commits that nobody reviewed, the agent starts a fresh reviewer
 
 ## After the third compaction
 
-A session that has been compacted three times keeps only summaries of its early decisions. The agent is asked to finish its step, write a handoff and tell you to continue in a fresh session. `KS_HANDOFF_AFTER` sets the count.
+In a session you watch, a session that has been compacted three times keeps only summaries of its early decisions. The agent is asked to finish its step, write a handoff and tell you to continue in a fresh session. `KS_HANDOFF_AFTER` sets the count.

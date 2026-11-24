@@ -16,7 +16,7 @@ Install it with `uv tool install git+https://github.com/aloki-alok/kagestack`.
 ## Checks
 
 - `ks check` fails a branch that adds a code comment, a lint suppression that names no rule, a skipped test, or a function grown past 60 lines. `ks check --all` counts what is already there.
-- `ks git-hook` runs `ks check` on every commit, in every repo on the machine.
+- `ks git-hook` runs `ks check` on each commit you make, in every repo on the machine that has no git hooks setup of its own. It skips merges, cherry-picks and reverts, and lets a commit through with a note when `ks` is not installed.
 
 ## Setting up a repo
 
