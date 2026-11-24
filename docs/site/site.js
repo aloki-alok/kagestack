@@ -4,12 +4,12 @@ const plain=md=>md.replace(/\`\`\`[\s\S]*?\`\`\`/g,'').replace(/^#.*$/gm,'').rep
 const num=i=>String(i).padStart(2,'0');
 function dark(){const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches}
 function tok(n){return getComputedStyle(document.documentElement).getPropertyValue('--'+n).trim()}
-function initMermaid(){const v=['paper','panel','ink','mid','line','accent','check','stop','you'].reduce((o,k)=>(o[k]=tok(k),o),{});mermaid.initialize({startOnLoad:false,theme:'base',securityLevel:'strict',fontFamily:tok('mono-name')||'monospace',
+function initMermaid(){const v=['paper','panel','ink','mid','line','accent','check','stop','you'].reduce((o,k)=>(o[k]=tok(k),o),{});mermaid.initialize({startOnLoad:false,theme:'base',securityLevel:'strict',fontFamily:tok('mono')||'monospace',
  flowchart:{useMaxWidth:false,nodeSpacing:36,rankSpacing:44,curve:'basis'},
  themeVariables:{fontSize:'13px',background:'transparent',primaryColor:v.paper,primaryTextColor:v.ink,primaryBorderColor:v.line,lineColor:v.mid,clusterBkg:'transparent',edgeLabelBackground:v.panel,actorBkg:v.paper,actorBorder:v.mid,actorTextColor:v.ink,actorLineColor:v.line,signalColor:v.mid,signalTextColor:v.ink,labelBoxBkgColor:v.paper,noteBkgColor:v.paper},
  themeCSS:'.you>rect,.you>polygon{stroke:'+v.you+'!important;stroke-width:1.5px!important} .check>rect,.check>polygon{stroke:'+v.check+'!important;stroke-width:1.5px!important} .stop>rect,.stop>polygon{stroke:'+v.stop+'!important;stroke-width:1.5px!important;stroke-dasharray:4 3} .node rect{rx:0;ry:0}'})}
 let n=0,cur=0;
-async function draw(){for(const el of document.querySelectorAll('pre.m')){const {svg}=await mermaid.render('m'+(n++),el.textContent);const f=document.createElement('figure');f.innerHTML='<div class="d">'+svg+'</div><figcaption><span>FIG. '+num(cur)+'</span><span>CLICK TO ENLARGE</span></figcaption>';f.querySelector('.d').onclick=()=>{$('#zoom').innerHTML=svg;$('#zoom').classList.add('open')};el.replaceWith(f)}}
+async function draw(){for(const el of document.querySelectorAll('pre.m')){const {svg}=await mermaid.render('m'+(n++),el.textContent);const f=document.createElement('figure');f.innerHTML='<div class="d">'+svg+'</div><figcaption><span>Fig. '+num(cur)+'</span><span>Click to enlarge</span></figcaption>';f.querySelector('.d').onclick=()=>{$('#zoom').innerHTML=svg;$('#zoom').classList.add('open')};el.replaceWith(f)}}
 function show(id){
  const i=Math.max(0,P.findIndex(p=>p.id===id));cur=i;const p=P[i];
  let md=p.md, fig='';
@@ -19,12 +19,12 @@ function show(id){
  const rest=body.replace(first,'');
  const words=plain(p.md).split(' ').length;
  const html=marked.parse(rest.replace(/\]\(([a-z-]+)\.md\)/g,'](#$1)'));
- $('#hero').innerHTML='<div class="fade"><div class="eyebrow">'+num(i)+' / '+(i?'GUIDE':'START HERE')+'</div><h1>'+esc(p.title)+'</h1><p class="stand">'+marked.parseInline(first)+'</p>'+
-  '<dl class="meta"><div><dt>PAGE</dt><dd>'+num(i)+' of '+num(P.length-1)+'</dd></div><div><dt>READ</dt><dd>'+Math.max(1,Math.round(words/220))+' min</dd></div><div><dt>SOURCE</dt><dd><a href="https://github.com/aloki-alok/kagestack/blob/main/docs/concepts/'+p.file+'"><code>docs/concepts/'+p.file+'</code></a></dd></div></dl></div>';
+ $('#hero').innerHTML='<div class="fade"><div class="eyebrow">'+num(i)+' / '+(i?'Guide':'Start here')+'</div><h1>'+esc(p.title)+'</h1><p class="stand">'+marked.parseInline(first)+'</p>'+
+  '<dl class="meta"><div><dt>Page</dt><dd>'+num(i)+' of '+num(P.length-1)+'</dd></div><div><dt>Read</dt><dd>'+Math.max(1,Math.round(words/220))+' min</dd></div><div><dt>Source</dt><dd><a href="https://github.com/aloki-alok/kagestack/blob/main/docs/concepts/'+p.file+'"><code>docs/concepts/'+p.file+'</code></a></dd></div></dl></div>';
  $('#main').innerHTML='<div class="fade">'+(fig?'<pre class="m">'+esc(fig)+'</pre>':'')+'<div class="prose">'+html+'</div>'+
-  '<div class="pager">'+(i>0?'<a class="prev" href="#'+P[i-1].id+'"><div class="k">\u2190 PREVIOUS</div><div class="t">'+P[i-1].title+'</div></a>':'')+(i<P.length-1?'<a class="next" href="#'+P[i+1].id+'"><div class="k">NEXT \u2192</div><div class="t">'+P[i+1].title+'</div></a>':'')+'</div></div>';
+  '<div class="pager">'+(i>0?'<a class="prev" href="#'+P[i-1].id+'"><div class="k">\u2190 Previous</div><div class="t">'+P[i-1].title+'</div></a>':'')+(i<P.length-1?'<a class="next" href="#'+P[i+1].id+'"><div class="k">Next \u2192</div><div class="t">'+P[i+1].title+'</div></a>':'')+'</div></div>';
  const hs=[...document.querySelectorAll('.prose h2')];hs.forEach(h=>{h.id=h.textContent.toLowerCase().replace(/[^a-z0-9]+/g,'-');h.insertAdjacentHTML('beforeend','<a class="anchor" href="#'+p.id+'/'+h.id+'">#</a>')});
- $('#tree').innerHTML='<div class="h">TREE</div>'+P.map((q,k)=>'<a href="#'+q.id+'" class="'+(k===i?'on':'')+'"><span class="n">'+num(k)+'</span><span>'+esc(q.title)+'</span></a>'+(k===i&&hs.length?'<div class="sub">'+hs.map(h=>'<a href="#'+p.id+'/'+h.id+'" data-h="'+h.id+'"><span>'+esc(h.childNodes[0].textContent)+'</span></a>').join('')+'</div>':'')).join('')+'<div class="prog"><i id="pbar"></i><span id="ptxt">00%</span></div>';
+ $('#tree').innerHTML='<div class="h">Pages</div>'+P.map((q,k)=>'<a href="#'+q.id+'" class="'+(k===i?'on':'')+'"><span class="n">'+num(k)+'</span><span>'+esc(q.title)+'</span></a>'+(k===i&&hs.length?'<div class="sub">'+hs.map(h=>'<a href="#'+p.id+'/'+h.id+'" data-h="'+h.id+'"><span>'+esc(h.childNodes[0].textContent)+'</span></a>').join('')+'</div>':'')).join('')+'<div class="prog"><i id="pbar"></i><span id="ptxt">00%</span></div>';
  initMermaid();draw();onScroll();
 }
 function route(){const [id,h]=location.hash.slice(1).split('/');if(id!==P[cur]?.id||!$('#main').innerHTML){show(id);scrollTo(0,0)}if(h){const el=document.getElementById(h);el&&el.scrollIntoView()}}

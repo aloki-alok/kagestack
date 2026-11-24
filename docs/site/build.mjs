@@ -24,19 +24,19 @@ const expand = md => md.replace('{{playbooks}}', playbookList)
 const pages = [{ id: 'how-kagestack-works', file: 'README.md', title: titleOf(readme), md: readme },
   ...order.map(f => { const md = expand(read(join(dir, f))); return { id: f.slice(0, -3), file: f, title: titleOf(md) || f, md } })]
 const data = JSON.stringify({ pages }).replace(/</g, '\\u003c')
-const style = read(themeFile) + '\n' + read(join(here, 'site.css'))
+const style = read(join(here, 'site.css')) + '\n' + read(themeFile)
 const script = read(join(here, 'site.js'))
 
 writeFileSync(out, `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>kagestack docs</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%2316140f%22/%3E%3Ctext x=%2216%22 y=%2222%22 font-family=%22monospace%22 font-size=%2216%22 fill=%22%23ff4f00%22 text-anchor=%22middle%22%3Eks%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%230a0a0a%22/%3E%3Ctext x=%2216%22 y=%2222%22 font-family=%22monospace%22 font-size=%2216%22 fill=%22%23ffffff%22 text-anchor=%22middle%22%3Eks%3C/text%3E%3C/svg%3E">
 <meta name="description" content="What kagestack does for coding agents, how it works, and why each change shipped.">
 <style>${style}</style></head><body>
 <a class="skip" href="#main">Skip to content</a>
 <header><div class="bar">
- <a class="logo" href="#how-kagestack-works"><span class="word">kagestack</span><span class="t">DOCS</span></a>
- <div class="keys"><a href="#how-kagestack-works" class="on"><b>[D]</b>DOCS</a><a href="#changes"><b>[C]</b>CHANGES</a><a href="https://github.com/aloki-alok/kagestack"><b>[G]</b>GITHUB</a></div>
+ <a class="logo" href="#how-kagestack-works"><span class="word">kagestack</span><span class="t">docs</span></a>
+ <div class="keys"><a href="#how-kagestack-works" class="on"><b>D</b>Docs</a><a href="#changes"><b>C</b>Changes</a><a href="https://github.com/aloki-alok/kagestack"><b>G</b>GitHub</a></div>
  <div class="tools"><button class="btn" id="sbtn">Search<kbd>/</kbd></button><button class="btn" id="theme" title="Theme (T)">Theme</button></div>
 </div></header>
 <div class="grid hero"><div class="sp"></div><div id="hero"></div></div><hr class="rule"><div class="grid"><nav class="tree" id="tree"></nav><main id="main"></main></div>
