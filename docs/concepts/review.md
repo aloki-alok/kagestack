@@ -1,5 +1,5 @@
 ```mermaid
-flowchart LR
+flowchart TD
   W["Agent commits work"] --> E["Turn ends"]
   E --> R["Fresh reviewer: your request and the commit range, nothing else"]:::check
   R --> F["Findings it proved with a command"]
