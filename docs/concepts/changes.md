@@ -37,7 +37,7 @@ kagestack changes almost every day, and I kept losing track of why. So each rele
 
 - **Before:** The end-of-turn review passed new code that rebuilt something the repo already had.
 - **After:** The reviewer searches for each new piece. A duplicate becomes a finding that names the existing code's file and line.
-- **Why:** The owner caught three rebuilds in two days (voice data, PostHog tracking, an existing function) that review passed.
+- **Why:** In two days, review passed three changes that rebuilt something the repo already had.
 - **Proof:** No eval.
 
 **Agents get a handoff prompt after the third compaction**
@@ -51,7 +51,7 @@ kagestack changes almost every day, and I kept losing track of why. So each rele
 
 - **Before:** `ks check` sent back the `@vitest-environment jsdom` line at the top of a component test as a new comment.
 - **After:** `ks check` treats that line, and the `@jest-environment` form, as a runner directive.
-- **Why:** The dashboard repo has 44 such files, and a commit adding a component test could not pass without a workaround.
+- **Why:** A frontend repo with 44 such files couldn't take a new component test without a workaround.
 - **Proof:** No eval.
 
 ## 0.28.0 · Nov 22 · Agents cannot hide a failing test or grow a function past 60 lines
@@ -70,7 +70,7 @@ kagestack changes almost every day, and I kept losing track of why. So each rele
 
 ## 0.27.0 · Nov 22 · Commits run `ks check`, for any agent
 
-- **Before:** `ks check` ran only in CI, and no OmniDim repo has that job. One of three retry tasks still committed a comment.
+- **Before:** `ks check` ran only in CI, and the repos I work in didn't have that job. One of three retry tasks still committed a comment.
 - **After:** A hook checks each file Claude edits. `ks git-hook` checks staged lines on every commit, for any agent or person.
 - **Why:** Nothing checked comments during a session, and the edit hook only reaches Claude Code.
 - **Proof:** No eval.
@@ -229,7 +229,7 @@ kagestack changes almost every day, and I kept losing track of why. So each rele
 
 - **Before:** Agents kept the old standard tool without checking for a newer one.
 - **After:** `ks tools` names each older tool in a repo with its faster, maintained swap. The `scout` playbook covers categories the list misses.
-- **Why:** The list's release dates were checked on GitHub on 2026-11-18. On the dashboard repo it names eslint, husky and npm.
+- **Why:** The list's release dates were checked on GitHub on 2026-11-18. On a typical frontend repo it names eslint, husky and npm.
 - **Proof:** No eval.
 
 ## 0.14.0 · Nov 18 · CI is pinned and worker rules reach only worker agents
