@@ -2,6 +2,8 @@
 
 checks and playbooks so coding agents write clean code without babysitting. (｀・ω・´)ゞ
 
+how it works, and why each release shipped: [aloki-alok.github.io/kagestack](https://aloki-alok.github.io/kagestack/).
+
 - **playbooks**: one per job (bug fix, feature, refactor, garden, clear comments, perf, investigate, explain, pr, handoff, scout). every step ends in proof.
 - **checks**: `ks check` fails a pull request that adds comments to code, or a suppression that names no rule.
 

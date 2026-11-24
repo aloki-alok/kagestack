@@ -1,0 +1,29 @@
+name: docs
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', 'src/ks/skills/**', '.github/workflows/docs.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: docs
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: pages
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.18
+      - run: node docs/site/build.mjs docs/concepts src/ks/skills docs/site/theme.css pages/index.html
+      - name: Push to gh-pages if anything changed
+        working-directory: pages
+        run: |
+          git add -A
+          git diff --cached --quiet && exit 0
+          git -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m "Docs from ${GITHUB_SHA::7}"
+          git push
