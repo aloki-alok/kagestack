@@ -75,6 +75,12 @@ def test_the_threshold_is_a_setting(tmp_path):
     assert start(transcript(tmp_path, [BOUNDARY] * 9), env={**ATTENDED, 'KS_HANDOFF_AFTER': '0'}) == ''
 
 
+def test_a_count_that_is_not_a_whole_number_falls_back_to_three(tmp_path):
+    path = transcript(tmp_path, [BOUNDARY] * 3)
+
+    assert '3 times' in told(start(path, env={**ATTENDED, 'KS_HANDOFF_AFTER': 'abc'}))
+
+
 def test_unattended_sessions_are_left_alone(tmp_path):
     path = transcript(tmp_path, [BOUNDARY] * 4)
 

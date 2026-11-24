@@ -28,8 +28,13 @@ def compactions(path):
     return count
 
 
+def threshold():
+    setting = os.environ.get('KS_HANDOFF_AFTER', '')
+    return int(setting) if setting.lstrip('-').isdigit() else 3
+
+
 def main():
-    after = int(os.environ.get('KS_HANDOFF_AFTER') or 3)
+    after = threshold()
     if after <= 0 or os.environ.get('CLAUDE_CODE_SESSION_ATTENDED') != '1':
         return
     try:
