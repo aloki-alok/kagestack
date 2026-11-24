@@ -26,18 +26,21 @@ const pages = [{ id: 'how-kagestack-works', file: 'README.md', title: titleOf(re
 const data = JSON.stringify({ pages }).replace(/</g, '\\u003c')
 const style = read(join(here, 'site.css')) + '\n' + read(themeFile)
 const script = read(join(here, 'site.js'))
+const mark = read(join(here, 'mark.svg')).trim()
+const themeIcon = read(join(here, 'theme-icon.svg')).trim()
+const favicon = 'data:image/svg+xml,' + encodeURIComponent(mark.replace('<path', '<style>path{color:#0a0a0a}@media (prefers-color-scheme:dark){path{color:#f5f5f5}}</style><path'))
 
 writeFileSync(out, `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>kagestack docs</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%230a0a0a%22/%3E%3Ctext x=%2216%22 y=%2222%22 font-family=%22monospace%22 font-size=%2216%22 fill=%22%23ffffff%22 text-anchor=%22middle%22%3Eks%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="${favicon}">
 <meta name="description" content="What kagestack does for coding agents, how it works, and why each change shipped.">
 <style>${style}</style></head><body>
 <a class="skip" href="#main">Skip to content</a>
 <header><div class="bar">
- <a class="logo" href="#how-kagestack-works"><span class="word">kagestack</span><span class="t">docs</span></a>
+ <a class="logo" href="#how-kagestack-works"><span class="mk" aria-hidden="true">${mark}</span><span class="word">kagestack</span></a>
  <div class="keys"><a href="#how-kagestack-works" class="on"><b>D</b>Docs</a><a href="#changes"><b>C</b>Changes</a><a href="https://github.com/aloki-alok/kagestack"><b>G</b>GitHub</a></div>
- <div class="tools"><button class="btn" id="sbtn">Search<kbd>/</kbd></button><button class="btn" id="theme" title="Theme (T)">Theme</button></div>
+ <div class="tools"><button class="btn" id="sbtn">Search<kbd>/</kbd></button><button class="btn icon" id="theme" title="Light or dark (T)" aria-label="Switch between light and dark">${themeIcon}</button></div>
 </div></header>
 <div class="grid hero"><div class="sp"></div><div id="hero"></div></div><hr class="rule"><div class="grid"><nav class="tree" id="tree"></nav><main id="main"></main></div>
 <div class="scrim" id="scrim"><div class="palette"><input id="q" placeholder="Search the docs" autocomplete="off"><div class="res" id="res"></div></div></div>
