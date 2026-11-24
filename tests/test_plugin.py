@@ -70,6 +70,16 @@ def test_edit_hook_runs_the_comment_check():
     )
 
 
+def test_compaction_start_runs_the_handoff_script():
+    hooks = json.loads((ROOT / 'hooks/hooks.json').read_text())['hooks']
+
+    entry = next(e for e in hooks['SessionStart'] if e.get('matcher') == 'compact')
+    assert entry['hooks'][0]['command'] == (
+        'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/handoff.py"'
+    )
+    assert (ROOT / 'hooks/handoff.py').is_file()
+
+
 def test_stop_hooks_run_the_review_and_decide_scripts():
     hooks = json.loads((ROOT / 'hooks/hooks.json').read_text())['hooks']
 
