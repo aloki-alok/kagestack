@@ -31,10 +31,10 @@ what changed after each:
 - the fifth found two rows of five still added a reasoning line ("Pick: Later, real demand, but..."), and one outcome overclaimed a local measurement as the user's result.
 - the sixth found one run of five still put a sentence above the steps, and code locations ran together with no label.
 - the seventh found one page of five gave the bug's cause only as an arrow chain, never as a sentence. the next change picks each item's form from its content instead of one template.
-- the eighth tied on every outcome: sonnet already picks the likely job and keeps scope on these asks. 8 of 10 runs read "see how we can reuse" as asking for advice, not a build. a retest needs real past asks that agents got wrong.
-- the ninth and tenth shipped `garden` on its unnamed-mistake win. "the old code here is bad" went to `refactor` in all 10 runs, and none read the history, so that wording is not garden's yet.
 - the eighth found raw codes inside a "today" mock, numbers left as plain text, and "no number" repeated on every card. the next change draws every number, keeps mocks to what the user reads, and shapes concept and comparison pages too.
 - the ninth found that change made no picture series in any run and let concept pages grow to 850 words. reverted. building pictures up needs a tool or a check, not a sentence.
+- the tenth tied on every outcome: sonnet already picks the likely job and keeps scope on these asks. 8 of 10 runs read "see how we can reuse" as asking for advice, not a build. a retest needs real past asks that agents got wrong.
+- the eleventh and twelfth shipped `garden` on its unnamed-mistake win. "the old code here is bad" went to `refactor` in all 10 runs, and none read the history, so that wording is not garden's yet.
 
 ## author-built evals
 
