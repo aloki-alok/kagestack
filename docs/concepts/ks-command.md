@@ -9,7 +9,7 @@ flowchart LR
 
 # The ks command
 
-`ks` is the command-line half of kagestack. It runs the same checks outside Claude Code, so they hold in CI and for any agent, Codex included.
+`ks` is the command-line half of kagestack. Hooks only live inside Claude Code, so `ks` carries the same checks into CI and to any other agent, Codex included.
 
 Install it with `uv tool install git+https://github.com/aloki-alok/kagestack`.
 

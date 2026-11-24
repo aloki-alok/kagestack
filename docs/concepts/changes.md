@@ -8,7 +8,7 @@ flowchart TD
 
 # Changes, release by release
 
-Each release says what an agent or you saw before it, what changed, why, and the test behind it. Ideas that tied in a blind test are listed too, marked as not shipped.
+kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
 
 ## 0.31.0 · Nov 24 · A docs site explains each hook, playbook and release
 
