@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 
 MARKER = b'"compact_boundary"'
@@ -30,7 +31,7 @@ def compactions(path):
 
 def threshold():
     setting = os.environ.get('KS_HANDOFF_AFTER', '')
-    return int(setting) if setting.lstrip('-').isdigit() else 3
+    return int(setting) if re.fullmatch('[0-9]+', setting) else 3
 
 
 def main():

@@ -3,6 +3,8 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
+
 HOOK = Path(__file__).parent.parent / 'hooks/handoff.py'
 ATTENDED = {'CLAUDE_CODE_SESSION_ATTENDED': '1'}
 BOUNDARY = {'type': 'system', 'subtype': 'compact_boundary', 'content': 'Conversation compacted'}
@@ -75,10 +77,11 @@ def test_the_threshold_is_a_setting(tmp_path):
     assert start(transcript(tmp_path, [BOUNDARY] * 9), env={**ATTENDED, 'KS_HANDOFF_AFTER': '0'}) == ''
 
 
-def test_a_count_that_is_not_a_whole_number_falls_back_to_three(tmp_path):
+@pytest.mark.parametrize('setting', ['abc', '2.5', '-1', '--5', '²', ''])
+def test_a_count_that_is_not_a_whole_number_falls_back_to_three(tmp_path, setting):
     path = transcript(tmp_path, [BOUNDARY] * 3)
 
-    assert '3 times' in told(start(path, env={**ATTENDED, 'KS_HANDOFF_AFTER': 'abc'}))
+    assert '3 times' in told(start(path, env={**ATTENDED, 'KS_HANDOFF_AFTER': setting}))
 
 
 def test_unattended_sessions_are_left_alone(tmp_path):
