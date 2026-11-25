@@ -12,6 +12,7 @@ from typing import NamedTuple
 from ks.setup import read_commands
 
 JS_LANGUAGES = ('javascript', 'typescript', 'tsx')
+OTHER_COMMENT_LANGUAGES = ('yaml', 'css', 'bash')
 SKIPPED_JS_TESTS = (
     r"""rule: {pattern: '$TEST($TITLE, $$$REST)'}
 constraints:
@@ -52,6 +53,10 @@ RULES = as_yaml(
     (
         ('comment', 'python', 'rule: {kind: comment}'),
         *(('comment', language, 'rule: {kind: comment}') for language in JS_LANGUAGES),
+        *(
+            ('comment', language, 'rule: {kind: comment}')
+            for language in OTHER_COMMENT_LANGUAGES
+        ),
         (
             'comment',
             'python',
@@ -70,15 +75,17 @@ TOOL_DIRECTIVE = re.compile(
     r'///\s*<reference'
     r'|(#|//|/\*+)\s*('
     r'noqa|type:\s*ignore|pyright:|pylint:|fmt:\s*(on|off|skip)|pragma: no cover'
-    r'|eslint-(disable|enable|env)|@ts-(check|expect-error|ignore|nocheck)'
+    r'|(eslint|oxlint)-(disable|enable|env)|@ts-(check|expect-error|ignore|nocheck)'
     r'|prettier-ignore|biome-ignore|#\s*sourceMappingURL=|SPDX-License-Identifier:'
     r'|@(vitest|jest)-environment\b'
+    r'|yaml-language-server:|yamllint\s+(disable|enable)|stylelint-(disable|enable)'
+    r'|shellcheck\s+(disable|source|shell)='
     r')',
     re.IGNORECASE,
 )
 SUPPRESSES_EVERY_RULE = re.compile(
     r'noqa(?!\s*:\s*\w)|(type|pyright):\s*ignore(?!\s*\[)|@ts-(ignore|nocheck)'
-    r'|eslint-disable(-next-line|-line)?(?=\s*(--|\*/|$))',
+    r'|(eslint|oxlint)-disable(-next-line|-line)?(?=\s*(--|\*/|$))',
     re.IGNORECASE,
 )
 FILE_HEADER = re.compile(r'#!|#.*coding[:=]')

@@ -4,12 +4,20 @@ flowchart TD
   B --> C["Nov 21: comment cleanup, pages for readers"]
   C --> D["Nov 22: decide instead of asking, ks check on every commit"]
   D --> E["Nov 24: reviewer finds rebuilt code, handoff, garden"]
-  E --> F["Nov 25: agents queue the merge and wait in the background"]:::check
+  E --> F["Nov 25: agents queue the merge and wait in the background"]
+  F --> G["Nov 26: ks check reads yaml, css and shell comments"]:::check
 ```
 
 # Changes, release by release
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
+
+## 0.33.4 · Nov 26 · Comments in yaml, css and shell scripts fail too
+
+- **Before:** `ks check` read python and js-family files only. An agent added a three-line comment to a GitHub workflow in a dashboard pull request, and the check passed it. `oxlint-disable` lines in js files were counted as comments.
+- **After:** Comments in yaml, css and shell scripts fail like any other. Their tool directives pass when they name a rule: `yaml-language-server:`, `yamllint disable`, `stylelint-disable`, `shellcheck disable=`. `oxlint-disable` is read like `eslint-disable`, so a bare one fails.
+- **Why:** The owner caught the workflow comment by eye. The rule "no comments" lived in the check for some files and only in text for the rest.
+- **Proof:** No eval. Each language and directive has a test that failed before the change. `ks check --all` on the dashboard's `pr-check.yml` now lists its comments.
 
 ## 0.33.3 · Nov 25 · Queue the merge after the fresh review
 
