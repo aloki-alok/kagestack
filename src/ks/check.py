@@ -73,6 +73,7 @@ RULES = as_yaml(
 )
 TOOL_DIRECTIVE = re.compile(
     r'///\s*<reference'
+    r'|#\s*v\d+(\.\d+)*\s*$'
     r'|(#|//|/\*+)\s*('
     r'noqa|type:\s*ignore|pyright:|pylint:|fmt:\s*(on|off|skip)|pragma: no cover'
     r'|(eslint|oxlint)-(disable|enable|env)|@ts-(check|expect-error|ignore|nocheck)'
