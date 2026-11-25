@@ -99,6 +99,10 @@ def test_long_commands_are_checked_in_well_under_a_second():
         '  \n' * 15_000,
         ';a=' * 16_000,
         '&a=b' * 12_000,
+        ';timeout a' * 5_000,
+        '(gh pr checks ' * 3_500,
+        '(gh -R a pr checks ' * 2_500,
+        'then gh pr checks ' * 2_800,
     )
 
     started = time.monotonic()

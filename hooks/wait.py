@@ -7,12 +7,12 @@ SLEEP_LOOP_WORDS = [
     re.compile(rf'\b{word}\b') for word in ('(for|while|until)', 'do', 'sleep', 'done')
 ]
 
-WATCH = re.compile(
-    r'(^|[;&|({`]|\b(then|do|else)[ \t])[ \t]*'
-    r'((sudo|time|env|exec|command|nice|timeout[ \t]+[^\s;&|]+|\w+=[^\s;&|]*)[ \t]+)*'
+COMMAND_BREAK = re.compile(r'[;&|(){}`\n]|\b(?:then|do|else)\b')
+
+WATCH_COMMAND = re.compile(
+    r'[ \t]*((sudo|time|env|exec|command|nice|timeout[ \t]+\S+|\w+=\S*)[ \t]+)*'
     r'(watch[ \t]|gh[ \t]+((-R|--repo)[ \t=]+\S+[ \t]+)?'
-    r'(run[ \t]+watch\b|pr[ \t]+checks\b[^;&|\n]*[ \t](--watch|-w)\b))',
-    re.MULTILINE,
+    r'(run[ \t]+watch\b|pr[ \t]+checks\b.*[ \t](--watch|-w)\b))'
 )
 
 SHELL_STRING = re.compile(
@@ -73,7 +73,8 @@ def code_only(command):
 def waits(command):
     script = without_heredoc_bodies(command)
     code = code_only(script)
-    if sleeps_in_a_loop(code) or WATCH.search(code):
+    commands = COMMAND_BREAK.split(code)
+    if sleeps_in_a_loop(code) or any(map(WATCH_COMMAND.match, commands)):
         return True
     return any(waits(''.join(inner)) for inner in SHELL_STRING.findall(script))
 
