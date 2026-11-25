@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 
 HOOK = Path(__file__).parent.parent / 'hooks/wait.py'
@@ -24,6 +25,7 @@ def run(command, background=False, env=None):
         capture_output=True,
         text=True,
         check=True,
+        timeout=5,
         env={**clean, **(env or {})},
     ).stdout
 
@@ -69,7 +71,83 @@ def test_watch_behind_a_prefix_is_sent_back():
 def test_quoted_mention_of_a_watch_command_runs():
     assert run('git commit -m "docs: explain gh run watch"') == ''
     assert run('git commit -m "fix; gh run watch" -m \'x; watch tests\'') == ''
+    assert run('git commit -m "say \\"hi\\"; gh run watch"') == ''
     assert run("cat > notes.md <<'EOF'\nwatch -n 5 ls\nEOF") == ''
+
+
+def test_quote_in_a_comment_does_not_hide_a_watch():
+    assert denied(run("echo hi # it's here\ngh run watch 1\n# it's there"))
+
+
+def test_escaped_quote_does_not_hide_a_watch():
+    assert denied(run('echo \\"; gh run watch 1; echo \\"'))
+
+
+def test_arithmetic_shift_is_not_a_heredoc():
+    assert denied(run('x=$((1<<2))\ngh run watch 1\n2'))
+
+
+def test_watch_inside_a_quote_that_spans_commands_runs():
+    assert run("echo don't; gh run watch 1; echo 'x'") == ''
+
+
+def test_long_commands_are_checked_in_well_under_a_second():
+    slow_before = (
+        'cat <<EOF\n' + 'line\n' * 10_000,
+        'for x do ' + 'sleep 1 ' * 6_000,
+        '\n' * 50_000,
+        '  \n' * 15_000,
+        ';a=' * 16_000,
+        '&a=b' * 12_000,
+        ';timeout a' * 5_000,
+        '(gh pr checks ' * 3_500,
+        '(gh -R a pr checks ' * 2_500,
+        'then gh pr checks ' * 2_800,
+    )
+
+    started = time.monotonic()
+    verdicts = [run(command) for command in slow_before]
+
+    assert time.monotonic() - started < 1
+    assert verdicts == [''] * len(slow_before)
+
+
+def test_loop_words_in_quoted_text_run():
+    assert run('git commit -m "while loop: do not sleep until done"') == ''
+    assert run("cat > poll.sh <<'EOF'\nwhile true; do sleep 1; done\nEOF") == ''
+
+
+def test_wait_inside_a_shell_string_is_sent_back():
+    assert denied(run('bash -c "while true; do sleep 5; done"'))
+    assert denied(run("sh -c 'gh run watch 1'"))
+    assert denied(run("bash -lc 'gh run watch 1'"))
+
+
+def test_watch_in_a_block_or_substitution_is_sent_back():
+    assert denied(run('if true; then gh run watch 1; fi'))
+    assert denied(run('for r in 1 2; do gh run watch $r; done'))
+    assert denied(run('if gh run watch 1; then echo ok; fi'))
+    assert denied(run('{ gh run watch 1; }'))
+    assert denied(run('r=`gh run watch 1`'))
+    assert denied(run('env CI=1 gh -R a/b run watch 1'))
+    assert denied(run('gh pr checks 1 -w'))
+
+
+def test_keyword_inside_an_argument_does_not_split_the_command():
+    assert denied(run('gh pr checks do --watch'))
+    assert denied(run('gh pr checks feature/do -w'))
+    assert denied(run('gh pr checks --repo then-x/y --watch'))
+
+
+def test_heredoc_ends_at_its_delimiter():
+    assert denied(run('cat <<EOF\nnotes\nEOF\ngh run watch 1'))
+    assert run('cat > notes.md <<EOF\nnotes\nwatch -n 1 ls\nEOF') == ''
+    assert denied(run('cat <<<word\ngh run watch 1\nword'))
+
+
+def test_quotes_follow_bash_rules():
+    assert denied(run('echo a#b; gh run watch 1'))
+    assert denied(run("echo 'a\\'; gh run watch 1"))
 
 
 def test_poll_loop_in_the_background_runs():

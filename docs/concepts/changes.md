@@ -11,6 +11,13 @@ flowchart TD
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
 
+## 0.33.2 · Nov 25 · The wait check reads shell quoting the way bash does
+
+- **Before:** 0.33.1 stripped quotes with a regex. A comment like `# it's here` or an escaped quote fooled it and hid a real `gh run watch`. A 20 KB unclosed heredoc made every shell command wait 2 seconds, and 50 KB took more than 8.
+- **After:** A small scanner reads quotes, escapes and comments the way bash does, in one pass. Loop words inside a commit message or a heredoc no longer trip the check. A wait inside `bash -c "..."`, an `if` block, braces, backticks, an `env` prefix, `gh -R` or `gh pr checks -w` is caught. The code is split into simple commands first, and each one is matched from its start, so the check takes time in line with the command's length.
+- **Why:** A fresh reviewer found both in 0.33.1. Python's `shlex` was the first choice, but it drops the newline that ends a comment, so two commands read as one. Three later reviews each found one more slow input for a single regex over the whole command, which is why the split came in.
+- **Proof:** No eval. Each case has a test that failed before the fix. A fuzz of 1,001 commands of 50 KB, made from every separator, prefix and command pairing, finished in at most 0.25 seconds each. The slowest one took 0.18 seconds at 200 KB.
+
 ## 0.33.1 · Nov 25 · A commit message that mentions watch runs
 
 - **Before:** The wait check refused a commit message or heredoc with a line like `x; watch tests`. A `time` or `sudo` prefix hid a real `gh run watch`.

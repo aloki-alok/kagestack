@@ -3,23 +3,81 @@ import os
 import re
 import sys
 
-SLEEP_LOOP = re.compile(
-    r'\b(for|while|until)\b.*?\bdo\b.*?\bsleep\b.*?\bdone\b', re.DOTALL
+SLEEP_LOOP_WORDS = [
+    re.compile(rf'\b{word}\b') for word in ('(for|while|until)', 'do', 'sleep', 'done')
+]
+
+COMMAND_BREAK = re.compile(r'[;&|(){}`\n]')
+
+WATCH_COMMAND = re.compile(
+    r'[ \t]*((if|elif|then|else|do|while|until|!|sudo|time|env|exec|command|nice'
+    r'|timeout[ \t]+\S+|\w+=\S*)[ \t]+)*'
+    r'(watch[ \t]|gh[ \t]+((-R|--repo)[ \t=]+\S+[ \t]+)?'
+    r'(run[ \t]+watch\b|pr[ \t]+checks\b.*[ \t](--watch|-w)\b))'
 )
 
-WATCH = re.compile(
-    r'(^|[;&|(\n])\s*((sudo|time|timeout\s+\S+|\w+=\S*)\s+)*'
-    r'(gh\s+run\s+watch\b|gh\s+pr\s+checks\b[^;&|\n]*--watch\b|watch\s)'
+SHELL_STRING = re.compile(
+    r'\b(?:ba|z|da)?sh[ \t]+-[a-z]*c[ \t]+(?:\'([^\']*)\'|"((?:[^"\\]|\\.)*)")'
 )
 
-HEREDOC_BODY = re.compile(r'<<-?\s*([\'"]?)(\w+)\1.*?\n.*?\n\s*\2\b', re.DOTALL)
+HEREDOC_START = re.compile(r'<<-?[ \t]*([\'"]?)([A-Za-z_]\w*)\1')
 
-QUOTED = re.compile(r'"[^"]*"|\'[^\']*\'')
+COMMENT_MAY_START_AFTER = ' \t\n;&|('
+
+
+def sleeps_in_a_loop(command):
+    position = 0
+    for word in SLEEP_LOOP_WORDS:
+        found = word.search(command, position)
+        if not found:
+            return False
+        position = found.end()
+    return True
+
+
+def without_heredoc_bodies(command):
+    kept, closing = [], None
+    for line in command.split('\n'):
+        if closing:
+            closing = None if line.strip() == closing else closing
+            continue
+        kept.append(line)
+        opened = HEREDOC_START.search(line.replace('<<<', ' '))
+        closing = opened.group(2) if opened else None
+    return '\n'.join(kept)
+
+
+def code_only(command):
+    kept, open_quote, escaped = [], None, False
+    for char in command:
+        if escaped:
+            escaped = False
+        elif open_quote == '#':
+            if char == '\n':
+                open_quote = None
+                kept.append(char)
+        elif open_quote:
+            escaped = char == '\\' and open_quote == '"'
+            open_quote = None if char == open_quote else open_quote
+        elif char == '\\':
+            escaped = True
+        elif char in '\'"' or (
+            char == '#' and (not kept or kept[-1] in COMMENT_MAY_START_AFTER)
+        ):
+            open_quote = char
+            kept.append(' ')
+        else:
+            kept.append(char)
+    return ''.join(kept)
 
 
 def waits(command):
-    unquoted = QUOTED.sub('', HEREDOC_BODY.sub('', command))
-    return bool(SLEEP_LOOP.search(command) or WATCH.search(unquoted))
+    script = without_heredoc_bodies(command)
+    code = code_only(script)
+    commands = COMMAND_BREAK.split(code)
+    if sleeps_in_a_loop(code) or any(map(WATCH_COMMAND.match, commands)):
+        return True
+    return any(waits(''.join(inner)) for inner in SHELL_STRING.findall(script))
 
 
 BACKGROUND = (
