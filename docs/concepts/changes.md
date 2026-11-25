@@ -11,12 +11,19 @@ flowchart TD
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
 
+## 0.33.2 · Nov 25 · The wait check reads shell quoting the way bash does
+
+- **Before:** 0.33.1 stripped quotes with a regex. A comment like `# it's here` or an escaped quote fooled it and hid a real `gh run watch`. A 20 KB unclosed heredoc made every shell command wait 2 seconds, and 50 KB took more than 8.
+- **After:** A small scanner reads quotes, escapes and comments the way bash does, in one pass. A 50 KB command is checked in about 0.06 seconds.
+- **Why:** A fresh reviewer found both in 0.33.1. Python's `shlex` was the first choice, but it drops the newline that ends a comment, so two commands read as one.
+- **Proof:** No eval. Each case has a test that failed before the fix, including one that times a 50 KB command.
+
 ## 0.33.1 · Nov 25 · A commit message that mentions watch runs
 
-- **Before:** The wait check refused a commit message or heredoc with a line like `x; watch tests`. A `time` or `sudo` prefix hid a real `gh run watch`. A first fix stripped quotes with a regex, which a comment like `# it's here` or an escaped quote fooled, and a 20 KB unclosed heredoc made every shell command wait 2 seconds.
-- **After:** A small scanner reads quotes, escapes and comments the way bash does, and the check ignores quoted text and heredoc bodies. A `sudo`, `time`, `timeout N` or `VAR=value` prefix no longer hides a watch. A 50 KB command is checked in about 0.06 seconds.
-- **Why:** Fresh reviewers found these cases in 0.33.0 and in the first fix.
-- **Proof:** No eval. Each case has a test that failed before the fix, including one that times a 50 KB command.
+- **Before:** The wait check refused a commit message or heredoc with a line like `x; watch tests`. A `time` or `sudo` prefix hid a real `gh run watch`.
+- **After:** Quoted text and heredoc bodies are ignored when the check looks for a watch command. A `sudo`, `time`, `timeout N` or `VAR=value` prefix no longer hides one.
+- **Why:** A fresh reviewer found both cases in 0.33.0.
+- **Proof:** No eval. Each case has a test that failed before the fix.
 
 ## 0.33.0 · Nov 25 · A foreground wait loop is sent to the background
 
