@@ -81,6 +81,16 @@ an agent that can run a command after each edit gets the check sooner, on the fi
 
 `kagestack:clear-comments` hands the comments in the code you changed to a reviewer agent that didn't write them. each comment gets a verdict: delete it, change the code so it says the same thing (or open an issue when that change is too big), move a real decision into an ADR, turn its rule into a test, or keep it with proof (a license, docs for an outside caller, a vendor quirk). `ks check --all` counts the comments and lines first, so you know the size of the job.
 
+## ks stuck
+
+`ks stuck` lists your open pull requests that can't move, and says who moves each one next.
+
+```
+ks stuck --org acme
+```
+
+a conflict, a red check or a requested change goes to an agent. a missing approval, a draft or a `hold` label waits for a person. after 14 idle days a person decides, so an agent never revives work that may be dead.
+
 ## ks tools
 
 names older tools in a repo and the faster, maintained option for each, like eslint → oxlint or pip → uv. the list is dated. the `scout` playbook rechecks it.

@@ -5,12 +5,19 @@ flowchart TD
   C --> D["Nov 22: decide instead of asking, ks check on every commit"]
   D --> E["Nov 24: reviewer finds rebuilt code, handoff, garden"]
   E --> F["Nov 25: agents queue the merge and wait in the background"]
-  F --> G["Nov 26: ks check reads yaml, css and shell comments"]:::check
+  F --> G["Nov 26: ks check reads yaml, css and shell comments, ks stuck says why a pull request waits"]:::check
 ```
 
 # Changes, release by release
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
+
+## 0.34.0 · Nov 26 · ks stuck says why each pull request waits
+
+- **Before:** Open pull requests piled up and nobody could see why. One count found 129 open: 41 with a conflict, 35 with red checks, 31 waiting on an approval. Most had not moved in weeks, because each one waited for somebody to open it and look.
+- **After:** `ks stuck` lists your open pull requests that can't move. Each one gets a reason and a next move, for an agent or for a person. A pull request with running checks or a queued merge is left out. After 14 idle days the move goes to a person, so an agent never revives work that may be dead. `--org` covers a whole org and `--json` feeds another tool.
+- **Why:** An agent can rebase a branch or fix a red check, but only once something tells it which pull request needs that. This list is that signal.
+- **Proof:** No eval, since no agent text changed. 22 tests run the command against a stand-in `gh`. On the real backlog it named 37 for an agent and 93 for a person.
 
 ## 0.33.4 · Nov 26 · Comments in yaml, css and shell scripts fail too
 
