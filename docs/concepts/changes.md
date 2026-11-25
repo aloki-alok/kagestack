@@ -3,12 +3,20 @@ flowchart TD
   A["Nov 18: first playbooks, ks check, blind evals, turn-end review"] --> B["Nov 19: sessions start with the right playbook"]
   B --> C["Nov 21: comment cleanup, pages for readers"]
   C --> D["Nov 22: decide instead of asking, ks check on every commit"]
-  D --> E["Nov 24: reviewer finds rebuilt code, handoff, garden"]:::check
+  D --> E["Nov 24: reviewer finds rebuilt code, handoff, garden"]
+  E --> F["Nov 25: agents queue the merge instead of waiting on CI"]:::check
 ```
 
 # Changes, release by release
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
+
+## 0.32.0 · Nov 25 · Agents queue the merge instead of waiting on CI
+
+- **Before:** After opening a pull request, a session sat and polled CI until it could merge, and a long CI run stalled the whole task.
+- **After:** The `pr` playbook queues the merge with GitHub's auto-merge (`gh pr merge --auto`) and moves on. GitHub merges once the required checks and reviews pass.
+- **Why:** The polling loop was one of four stall causes in the owner's Nov 24 retro.
+- **Proof:** No eval. The `pr` eval runs in a local repo with no GitHub, so it cannot reach a merge.
 
 ## 0.31.0 · Nov 24 · A docs site explains each hook, playbook and release
 
