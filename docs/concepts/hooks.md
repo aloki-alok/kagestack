@@ -6,6 +6,8 @@ sequenceDiagram
   K-->>S: playbook map, and "decide, don't ask"
   S->>K: starts a subagent
   K-->>S: worker rules for that subagent
+  S->>K: runs a shell command
+  K-->>S: sends a foreground wait loop to the background
   S->>K: edits a file
   K-->>S: sends back a new comment, skipped test or long function
   S->>K: ends a turn
@@ -16,7 +18,7 @@ sequenceDiagram
 
 # What runs on its own
 
-Six hooks run inside every Claude Code session that has kagestack installed, kind of like the checks a pilot runs without thinking about them. You never type anything. Each hook either adds a short note to what the agent reads, or sends its work back with the reason.
+Seven hooks run inside every Claude Code session that has kagestack installed, kind of like the checks a pilot runs without thinking about them. You never type anything. Each hook either adds a short note to what the agent reads, or sends its work back with the reason.
 
 ## When a session starts
 
@@ -25,6 +27,10 @@ The agent reads the map from kinds of task to playbooks, so it picks up the righ
 ## When a subagent starts
 
 A plain subagent gets the worker rules: do the job in its brief, back every claim with a command and its output, and stop after the third failed try on one idea. Named agents with their own instructions are left alone.
+
+## Before each shell command
+
+A command that waits in the foreground is sent back before it runs. That means a loop that sleeps between checks, `gh run watch`, or `gh pr checks --watch`. The session freezes on that wait and can't work on anything else. So the agent runs the wait in the background and keeps working until the notification arrives. For any other condition, it waits with the Monitor tool. `KS_WAIT=0` turns the check off.
 
 ## After each edit
 

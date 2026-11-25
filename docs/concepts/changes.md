@@ -4,12 +4,19 @@ flowchart TD
   B --> C["Nov 21: comment cleanup, pages for readers"]
   C --> D["Nov 22: decide instead of asking, ks check on every commit"]
   D --> E["Nov 24: reviewer finds rebuilt code, handoff, garden"]
-  E --> F["Nov 25: agents queue the merge instead of waiting on CI"]:::check
+  E --> F["Nov 25: agents queue the merge and wait in the background"]:::check
 ```
 
 # Changes, release by release
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
+
+## 0.33.0 · Nov 25 · A foreground wait loop is sent to the background
+
+- **Before:** An agent waited for a staging deploy with a `for` loop that slept 15 seconds between checks. The session sat frozen for 2 minutes 22 seconds. Claude Code blocks a bare foreground `sleep`, but it lets the same `sleep` run inside a loop.
+- **After:** A new hook runs before each shell command. It sends back a foreground loop that sleeps, `gh run watch` and `gh pr checks --watch`. The reason it gives names the better tool: run in the background, or wait with Monitor.
+- **Why:** The owner's rule "never block on a wait" lived only in text, and the agent skipped it at the exact moment it mattered.
+- **Proof:** No eval. One headless session, shown in the pull request: the wait loop was refused, and the agent moved the wait to the background.
 
 ## 0.32.1 · Nov 25 · Queue a merge only where the repo allows auto-merge
 
