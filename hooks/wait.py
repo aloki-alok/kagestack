@@ -7,10 +7,11 @@ SLEEP_LOOP_WORDS = [
     re.compile(rf'\b{word}\b') for word in ('(for|while|until)', 'do', 'sleep', 'done')
 ]
 
-COMMAND_BREAK = re.compile(r'[;&|(){}`\n]|\b(?:then|do|else)\b')
+COMMAND_BREAK = re.compile(r'[;&|(){}`\n]')
 
 WATCH_COMMAND = re.compile(
-    r'[ \t]*((sudo|time|env|exec|command|nice|timeout[ \t]+\S+|\w+=\S*)[ \t]+)*'
+    r'[ \t]*((if|elif|then|else|do|while|until|!|sudo|time|env|exec|command|nice'
+    r'|timeout[ \t]+\S+|\w+=\S*)[ \t]+)*'
     r'(watch[ \t]|gh[ \t]+((-R|--repo)[ \t=]+\S+[ \t]+)?'
     r'(run[ \t]+watch\b|pr[ \t]+checks\b.*[ \t](--watch|-w)\b))'
 )
