@@ -9,14 +9,14 @@ SLEEP_LOOP_WORDS = [
 
 WATCH = re.compile(
     r'(^|[;&|({`]|\b(then|do|else)[ \t])[ \t]*'
-    r'((sudo|time|env|exec|command|nice|timeout[ \t]+\S+|\w+=\S*)[ \t]+)*'
+    r'((sudo|time|env|exec|command|nice|timeout[ \t]+[^\s;&|]+|\w+=[^\s;&|]*)[ \t]+)*'
     r'(watch[ \t]|gh[ \t]+((-R|--repo)[ \t=]+\S+[ \t]+)?'
     r'(run[ \t]+watch\b|pr[ \t]+checks\b[^;&|\n]*[ \t](--watch|-w)\b))',
     re.MULTILINE,
 )
 
 SHELL_STRING = re.compile(
-    r'\b(?:ba|z|da)?sh[ \t]+-c[ \t]+(?:\'([^\']*)\'|"((?:[^"\\]|\\.)*)")'
+    r'\b(?:ba|z|da)?sh[ \t]+-[a-z]*c[ \t]+(?:\'([^\']*)\'|"((?:[^"\\]|\\.)*)")'
 )
 
 HEREDOC_START = re.compile(r'<<-?[ \t]*([\'"]?)([A-Za-z_]\w*)\1')

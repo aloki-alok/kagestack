@@ -25,6 +25,7 @@ def run(command, background=False, env=None):
         capture_output=True,
         text=True,
         check=True,
+        timeout=5,
         env={**clean, **(env or {})},
     ).stdout
 
@@ -96,6 +97,8 @@ def test_long_commands_are_checked_in_well_under_a_second():
         'for x do ' + 'sleep 1 ' * 6_000,
         '\n' * 50_000,
         '  \n' * 15_000,
+        ';a=' * 16_000,
+        '&a=b' * 12_000,
     )
 
     started = time.monotonic()
@@ -113,10 +116,12 @@ def test_loop_words_in_quoted_text_run():
 def test_wait_inside_a_shell_string_is_sent_back():
     assert denied(run('bash -c "while true; do sleep 5; done"'))
     assert denied(run("sh -c 'gh run watch 1'"))
+    assert denied(run("bash -lc 'gh run watch 1'"))
 
 
 def test_watch_in_a_block_or_substitution_is_sent_back():
     assert denied(run('if true; then gh run watch 1; fi'))
+    assert denied(run('for r in 1 2; do gh run watch $r; done'))
     assert denied(run('{ gh run watch 1; }'))
     assert denied(run('r=`gh run watch 1`'))
     assert denied(run('env CI=1 gh -R a/b run watch 1'))
@@ -125,6 +130,7 @@ def test_watch_in_a_block_or_substitution_is_sent_back():
 
 def test_heredoc_ends_at_its_delimiter():
     assert denied(run('cat <<EOF\nnotes\nEOF\ngh run watch 1'))
+    assert run('cat > notes.md <<EOF\nnotes\nwatch -n 1 ls\nEOF') == ''
     assert denied(run('cat <<<word\ngh run watch 1\nword'))
 
 
