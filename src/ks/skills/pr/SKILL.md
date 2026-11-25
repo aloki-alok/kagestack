@@ -19,7 +19,10 @@ description: Open a pull request a reviewer can read in a minute. Use when openi
    - `## Tradeoffs`: only alternatives a reviewer would ask about.
    - `## Merge danger`: one-way or two-way door, and the widest blast radius.
 5. **Open it ready for review,** not as a draft.
+6. **Queue the merge, then move on.** If you may merge it yourself, run `gh pr merge --auto --squash` right after opening it, or `--merge` where the repo refuses squash. GitHub merges once the required checks and reviews pass, so start the next task instead of waiting on CI.
+   A queued pull request merges at its next green head, so push to it only to fix what blocks it.
+   If GitHub says auto-merge is off for the repo, say so in the reply. Do not poll in its place.
 
 ## Reply
 
-The link and the merge danger in one line.
+The link, the merge danger, and whether the merge is queued, in one line.
