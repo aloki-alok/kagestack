@@ -11,6 +11,13 @@ flowchart TD
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
 
+## 0.33.1 · Nov 25 · A commit message that mentions watch runs
+
+- **Before:** The wait check refused a commit message or heredoc with a line like `x; watch tests`. A `time` or `sudo` prefix hid a real `gh run watch`.
+- **After:** Quoted text and heredoc bodies are ignored when the check looks for a watch command. A `sudo`, `time`, `timeout N` or `VAR=value` prefix no longer hides one.
+- **Why:** A fresh reviewer found both cases in 0.33.0.
+- **Proof:** No eval. Each case has a test that failed before the fix.
+
 ## 0.33.0 · Nov 25 · A foreground wait loop is sent to the background
 
 - **Before:** An agent waited for a staging deploy with a `for` loop that slept 15 seconds between checks. The session sat frozen for 2 minutes 22 seconds. Claude Code blocks a bare foreground `sleep`, but it lets the same `sleep` run inside a loop.

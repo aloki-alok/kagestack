@@ -3,12 +3,24 @@ import os
 import re
 import sys
 
-WAITS = re.compile(
-    r'\b(for|while|until)\b.*?\bdo\b.*?\bsleep\b.*?\bdone\b'
-    r'|(^|[;&|(\n])\s*(timeout\s+\S+\s+)?'
-    r'(gh\s+run\s+watch\b|gh\s+pr\s+checks\b[^;&|\n"\']*--watch\b|watch\s)',
-    re.DOTALL,
+SLEEP_LOOP = re.compile(
+    r'\b(for|while|until)\b.*?\bdo\b.*?\bsleep\b.*?\bdone\b', re.DOTALL
 )
+
+WATCH = re.compile(
+    r'(^|[;&|(\n])\s*((sudo|time|timeout\s+\S+|\w+=\S*)\s+)*'
+    r'(gh\s+run\s+watch\b|gh\s+pr\s+checks\b[^;&|\n]*--watch\b|watch\s)'
+)
+
+HEREDOC_BODY = re.compile(r'<<-?\s*([\'"]?)(\w+)\1.*?\n.*?\n\s*\2\b', re.DOTALL)
+
+QUOTED = re.compile(r'"[^"]*"|\'[^\']*\'')
+
+
+def waits(command):
+    unquoted = QUOTED.sub('', HEREDOC_BODY.sub('', command))
+    return bool(SLEEP_LOOP.search(command) or WATCH.search(unquoted))
+
 
 BACKGROUND = (
     'This command waits in the foreground and blocks the session. Run it again '
@@ -27,9 +39,7 @@ def main():
     except ValueError:
         return
     command = event.get('tool_input') or {}
-    if command.get('run_in_background') or not WAITS.search(
-        command.get('command') or ''
-    ):
+    if command.get('run_in_background') or not waits(command.get('command') or ''):
         return
     decision = {
         'hookEventName': 'PreToolUse',
