@@ -30,7 +30,7 @@ A plain subagent gets the worker rules: do the job in its brief, back every clai
 
 ## Before each shell command
 
-A command that waits in the foreground is sent back before it runs. That means a loop that sleeps between checks, `gh run watch`, or `gh pr checks --watch`. The session freezes on that wait and can't work on anything else. So the agent runs the wait in the background and keeps working until the notification arrives. For any other condition, it waits with the Monitor tool. `KS_WAIT=0` turns the check off.
+A command that waits in the foreground is sent back before it runs. That means a loop that sleeps between checks, `gh run watch`, `gh pr checks --watch`, or `watch`. The session freezes on that wait and can't work on anything else. So the agent runs the wait in the background and keeps working until the notification arrives. For any other condition, it waits with the Monitor tool. `KS_WAIT=0` turns the check off.
 
 ## After each edit
 

@@ -56,6 +56,16 @@ def test_foreground_gh_watch_is_sent_back():
     assert denied(run('gh pr checks 42 --watch'))
 
 
+def test_watch_after_another_command_is_sent_back():
+    assert denied(run('cd repo && timeout 600 gh run watch 123'))
+    assert denied(run('watch -n 5 gh run list'))
+
+
+def test_quoted_mention_of_a_watch_command_runs():
+    assert run('git commit -m "docs: explain gh run watch"') == ''
+    assert run('gh run view 1 --log | grep "gh pr checks --watch"') == ''
+
+
 def test_poll_loop_in_the_background_runs():
     assert run(POLL_LOOP, background=True) == ''
 

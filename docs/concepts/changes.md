@@ -14,7 +14,7 @@ kagestack changes almost every day, and I kept losing track of why. So each rele
 ## 0.33.0 · Nov 25 · A foreground wait loop is sent to the background
 
 - **Before:** An agent waited for a staging deploy with a `for` loop that slept 15 seconds between checks. The session sat frozen for 2 minutes 22 seconds. Claude Code blocks a bare foreground `sleep`, but it lets the same `sleep` run inside a loop.
-- **After:** A new hook runs before each shell command. It sends back a foreground loop that sleeps, `gh run watch` and `gh pr checks --watch`. The reason it gives names the better tool: run in the background, or wait with Monitor.
+- **After:** A new hook runs before each shell command. It sends back a foreground loop that sleeps, `gh run watch`, `gh pr checks --watch` and `watch`. The reason it gives names the better tool: run in the background, or wait with Monitor.
 - **Why:** The owner's rule "never block on a wait" lived only in text, and the agent skipped it at the exact moment it mattered.
 - **Proof:** No eval. One headless session, shown in the pull request: the wait loop was refused, and the agent moved the wait to the background.
 

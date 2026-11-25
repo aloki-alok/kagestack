@@ -5,8 +5,8 @@ import sys
 
 WAITS = re.compile(
     r'\b(for|while|until)\b.*?\bdo\b.*?\bsleep\b.*?\bdone\b'
-    r'|\bgh\s+run\s+watch\b'
-    r'|\bgh\s+pr\s+checks\b.*--watch\b',
+    r'|(^|[;&|(\n])\s*(timeout\s+\S+\s+)?'
+    r'(gh\s+run\s+watch\b|gh\s+pr\s+checks\b[^;&|\n"\']*--watch\b|watch\s)',
     re.DOTALL,
 )
 
