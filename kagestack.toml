@@ -1,4 +1,5 @@
 # ks ci runs these in order, then ks check.
 [commands]
 install = ["uv run --locked playwright install --with-deps chromium webkit firefox"]
+lint = ["uv run --locked ruff format --check", "uv run --locked ruff check"]
 test = ["uv run --locked pytest"]

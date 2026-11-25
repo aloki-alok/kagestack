@@ -14,6 +14,7 @@ ks = "ks.cli:main"
 dev = [
     "playwright==1.65.0",
     "pytest>=8",
+    "ruff==0.17.4",
 ]
 
 [build-system]
@@ -22,6 +23,13 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-name = "ks"
+
+[tool.ruff]
+extend-exclude = ["evals/*/repo"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+ignore = ["E501"]
 
 [tool.ruff.format]
 quote-style = "single"
