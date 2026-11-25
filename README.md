@@ -89,7 +89,7 @@ an agent that can run a command after each edit gets the check sooner, on the fi
 ks stuck --org acme
 ```
 
-A conflict, a red check or a requested change goes to an agent. A missing approval, a draft or a `hold` label waits for a person. After 14 idle days a person decides.
+a conflict, a red check or a requested change goes to an agent. a missing approval, a draft or a `hold` label waits for a person. after 14 idle days a person decides, so an agent never revives work that may be dead.
 
 ## ks tools
 
