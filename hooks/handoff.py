@@ -24,7 +24,10 @@ def compactions(path):
                 entry = json.loads(line)
             except ValueError:
                 continue
-            if entry.get('type') == 'system' and entry.get('subtype') == 'compact_boundary':
+            if (
+                entry.get('type') == 'system'
+                and entry.get('subtype') == 'compact_boundary'
+            ):
                 count += 1
     return count
 
@@ -47,9 +50,16 @@ def main():
         return
     if count >= after:
         context = HANDOFF.format(count=count)
-        print(json.dumps({
-            'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': context},
-        }))
+        print(
+            json.dumps(
+                {
+                    'hookSpecificOutput': {
+                        'hookEventName': 'SessionStart',
+                        'additionalContext': context,
+                    },
+                }
+            )
+        )
 
 
 main()

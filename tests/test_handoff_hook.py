@@ -7,7 +7,11 @@ import pytest
 
 HOOK = Path(__file__).parent.parent / 'hooks/handoff.py'
 ATTENDED = {'CLAUDE_CODE_SESSION_ATTENDED': '1'}
-BOUNDARY = {'type': 'system', 'subtype': 'compact_boundary', 'content': 'Conversation compacted'}
+BOUNDARY = {
+    'type': 'system',
+    'subtype': 'compact_boundary',
+    'content': 'Conversation compacted',
+}
 TURN = {'type': 'user', 'message': {'role': 'user', 'content': 'keep going'}}
 
 
@@ -19,10 +23,15 @@ def transcript(tmp_path, entries):
 
 def start(path, source='compact', env=ATTENDED):
     clean = {
-        k: v for k, v in os.environ.items()
+        k: v
+        for k, v in os.environ.items()
         if not k.startswith('KS_') and k != 'CLAUDE_CODE_SESSION_ATTENDED'
     }
-    event = {'hook_event_name': 'SessionStart', 'source': source, 'transcript_path': str(path)}
+    event = {
+        'hook_event_name': 'SessionStart',
+        'source': source,
+        'transcript_path': str(path),
+    }
     return subprocess.run(
         ['python3', HOOK],
         input=json.dumps(event),
@@ -63,7 +72,11 @@ def test_a_resume_says_nothing_however_often_it_was_compacted(tmp_path):
 def test_text_that_mentions_the_marker_is_not_a_compaction(tmp_path):
     quoted = {
         'type': 'user',
-        'message': {'content': [{'type': 'tool_result', 'content': '"subtype":"compact_boundary"'}]},
+        'message': {
+            'content': [
+                {'type': 'tool_result', 'content': '"subtype":"compact_boundary"'}
+            ]
+        },
     }
     path = transcript(tmp_path, [BOUNDARY, BOUNDARY, quoted, quoted])
 
@@ -74,7 +87,13 @@ def test_the_threshold_is_a_setting(tmp_path):
     path = transcript(tmp_path, [BOUNDARY, BOUNDARY])
 
     assert '2 times' in told(start(path, env={**ATTENDED, 'KS_HANDOFF_AFTER': '2'}))
-    assert start(transcript(tmp_path, [BOUNDARY] * 9), env={**ATTENDED, 'KS_HANDOFF_AFTER': '0'}) == ''
+    assert (
+        start(
+            transcript(tmp_path, [BOUNDARY] * 9),
+            env={**ATTENDED, 'KS_HANDOFF_AFTER': '0'},
+        )
+        == ''
+    )
 
 
 @pytest.mark.parametrize('setting', ['abc', '2.5', '-1', '--5', '²', ''])
