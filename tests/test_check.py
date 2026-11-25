@@ -320,7 +320,9 @@ def test_tool_directives_pass(repo):
 
 
 def test_prose_after_a_version_tag_fails(repo):
-    commit(repo, {'a.yml': 'a: 1  # v4 because v5 broke the cache\nb: 2  # version 3\n'})
+    commit(
+        repo, {'a.yml': 'a: 1  # v4 because v5 broke the cache\nb: 2  # version 3\n'}
+    )
 
     result = ks_check(repo, '--all')
 
