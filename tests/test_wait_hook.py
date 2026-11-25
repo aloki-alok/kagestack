@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 
 HOOK = Path(__file__).parent.parent / 'hooks/wait.py'
@@ -69,7 +70,35 @@ def test_watch_behind_a_prefix_is_sent_back():
 def test_quoted_mention_of_a_watch_command_runs():
     assert run('git commit -m "docs: explain gh run watch"') == ''
     assert run('git commit -m "fix; gh run watch" -m \'x; watch tests\'') == ''
+    assert run('git commit -m "say \\"hi\\"; gh run watch"') == ''
     assert run("cat > notes.md <<'EOF'\nwatch -n 5 ls\nEOF") == ''
+
+
+def test_quote_in_a_comment_does_not_hide_a_watch():
+    assert denied(run("echo hi # it's here\ngh run watch 1\n# it's there"))
+
+
+def test_escaped_quote_does_not_hide_a_watch():
+    assert denied(run('echo \\"; gh run watch 1; echo \\"'))
+
+
+def test_arithmetic_shift_is_not_a_heredoc():
+    assert denied(run('x=$((1<<2))\ngh run watch 1\n2'))
+
+
+def test_watch_inside_a_quote_that_spans_commands_runs():
+    assert run("echo don't; gh run watch 1; echo 'x'") == ''
+
+
+def test_long_commands_are_checked_in_well_under_a_second():
+    unclosed_heredoc = 'cat <<EOF\n' + 'line\n' * 10_000
+    loop_without_done = 'for x do ' + 'sleep 1 ' * 6_000
+
+    started = time.monotonic()
+    run(unclosed_heredoc)
+    run(loop_without_done)
+
+    assert time.monotonic() - started < 1
 
 
 def test_poll_loop_in_the_background_runs():
