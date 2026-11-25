@@ -8,11 +8,18 @@ SLEEP_LOOP_WORDS = [
 ]
 
 WATCH = re.compile(
-    r'(^|[;&|(\n])\s*((sudo|time|timeout\s+\S+|\w+=\S*)\s+)*'
-    r'(gh\s+run\s+watch\b|gh\s+pr\s+checks\b[^;&|\n]*--watch\b|watch\s)'
+    r'(^|[;&|({`]|\b(then|do|else)[ \t])[ \t]*'
+    r'((sudo|time|env|exec|command|nice|timeout[ \t]+\S+|\w+=\S*)[ \t]+)*'
+    r'(watch[ \t]|gh[ \t]+((-R|--repo)[ \t=]+\S+[ \t]+)?'
+    r'(run[ \t]+watch\b|pr[ \t]+checks\b[^;&|\n]*[ \t](--watch|-w)\b))',
+    re.MULTILINE,
 )
 
-HEREDOC_START = re.compile(r'<<-?\s*([\'"]?)([A-Za-z_]\w*)\1')
+SHELL_STRING = re.compile(
+    r'\b(?:ba|z|da)?sh[ \t]+-c[ \t]+(?:\'([^\']*)\'|"((?:[^"\\]|\\.)*)")'
+)
+
+HEREDOC_START = re.compile(r'<<-?[ \t]*([\'"]?)([A-Za-z_]\w*)\1')
 
 COMMENT_MAY_START_AFTER = ' \t\n;&|('
 
@@ -64,8 +71,11 @@ def code_only(command):
 
 
 def waits(command):
-    code = code_only(without_heredoc_bodies(command))
-    return sleeps_in_a_loop(command) or bool(WATCH.search(code))
+    script = without_heredoc_bodies(command)
+    code = code_only(script)
+    if sleeps_in_a_loop(code) or WATCH.search(code):
+        return True
+    return any(waits(''.join(inner)) for inner in SHELL_STRING.findall(script))
 
 
 BACKGROUND = (

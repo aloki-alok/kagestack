@@ -14,7 +14,7 @@ kagestack changes almost every day, and I kept losing track of why. So each rele
 ## 0.33.2 · Nov 25 · The wait check reads shell quoting the way bash does
 
 - **Before:** 0.33.1 stripped quotes with a regex. A comment like `# it's here` or an escaped quote fooled it and hid a real `gh run watch`. A 20 KB unclosed heredoc made every shell command wait 2 seconds, and 50 KB took more than 8.
-- **After:** A small scanner reads quotes, escapes and comments the way bash does, in one pass. A 50 KB command is checked in about 0.06 seconds.
+- **After:** A small scanner reads quotes, escapes and comments the way bash does, in one pass. Loop words inside a commit message or a heredoc no longer trip the check. A wait inside `bash -c "..."`, an `if` block, braces, backticks, an `env` prefix, `gh -R` or `gh pr checks -w` is caught. 16 adversarial 50 KB commands are each checked in under 0.11 seconds.
 - **Why:** A fresh reviewer found both in 0.33.1. Python's `shlex` was the first choice, but it drops the newline that ends a comment, so two commands read as one.
 - **Proof:** No eval. Each case has a test that failed before the fix, including one that times a 50 KB command.
 
