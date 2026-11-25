@@ -11,6 +11,13 @@ flowchart TD
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
 
+## 0.32.1 · Nov 25 · Queue a merge only where the repo allows auto-merge
+
+- **Before:** On a repo that does not allow auto-merge, `gh pr merge --auto` merged the pull request at once, before CI finished, wherever branch rules required no checks.
+- **After:** The `pr` playbook reads the repo's `allow_auto_merge` first, and passes `--auto` only when it is on.
+- **Why:** A pull request merged 2 minutes before its CI passed, on the day 0.32.0 shipped.
+- **Proof:** No eval. Seen on one pull request.
+
 ## 0.32.0 · Nov 25 · Agents queue the merge instead of waiting on CI
 
 - **Before:** After opening a pull request, a session sat and polled CI until it could merge, and a long CI run stalled the whole task.
