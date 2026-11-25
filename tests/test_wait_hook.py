@@ -61,9 +61,15 @@ def test_watch_after_another_command_is_sent_back():
     assert denied(run('watch -n 5 gh run list'))
 
 
+def test_watch_behind_a_prefix_is_sent_back():
+    assert denied(run('time gh run watch 1'))
+    assert denied(run('CI=1 sudo watch ls'))
+
+
 def test_quoted_mention_of_a_watch_command_runs():
     assert run('git commit -m "docs: explain gh run watch"') == ''
-    assert run('gh run view 1 --log | grep "gh pr checks --watch"') == ''
+    assert run('git commit -m "fix; gh run watch" -m \'x; watch tests\'') == ''
+    assert run("cat > notes.md <<'EOF'\nwatch -n 5 ls\nEOF") == ''
 
 
 def test_poll_loop_in_the_background_runs():
