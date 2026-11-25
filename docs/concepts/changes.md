@@ -12,6 +12,13 @@ flowchart TD
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
 
+## 0.34.1 · Nov 26 · A version tag after a pinned action passes
+
+- **Before:** `ks check` counted `# v7.0.1` after `uses: actions/checkout@<hash>` as a comment. A pull request that bumped a pinned action failed on its new tag.
+- **After:** A `#` comment that holds only a version, such as `# v4` or `# v7.0.1`, passes. Any word after the version fails as before.
+- **Why:** The tag is the only record of which release a hash is. A sweep that deleted every comment in the dashboard removed 8 of them, and a reviewer caught it.
+- **Proof:** No eval. One test passes the tag, and it was red before the change. A second test fails prose after a tag, and it goes red if the pattern loses its end anchor.
+
 ## 0.34.0 · Nov 26 · ks stuck says why each pull request waits
 
 - **Before:** Open pull requests piled up and nobody could see why. One count found 129 open: 41 with a conflict, 35 with red checks, 31 waiting on an approval. Most had not moved in weeks, because each one waited for somebody to open it and look.

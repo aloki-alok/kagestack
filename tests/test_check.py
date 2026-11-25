@@ -309,6 +309,7 @@ def test_tool_directives_pass(repo):
             'f.yml': '# yaml-language-server: $schema=./s.json\na: 1  # yamllint disable-line rule:truthy\n',
             'g.css': '/* stylelint-disable-next-line color-no-hex */\n.g { color: #fff; }\n',
             'h.sh': '#!/bin/sh\n# shellcheck disable=SC2086\necho $h\n',
+            'i.yml': 'steps:\n  - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n  - uses: a/b@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4\n',
             'd.test.ts': ('/** @jest-environment node */\ntest("y", () => {});\n'),
         },
     )
@@ -316,6 +317,15 @@ def test_tool_directives_pass(repo):
     result = ks_check(repo, '--all')
 
     assert result.returncode == 0, result.stdout
+
+
+def test_prose_after_a_version_tag_fails(repo):
+    commit(repo, {'a.yml': 'a: 1  # v4 because v5 broke the cache\nb: 2  # version 3\n'})
+
+    result = ks_check(repo, '--all')
+
+    assert result.returncode == 1
+    assert '2 comments' in result.stdout
 
 
 def test_suppression_that_names_no_rule_fails(repo):
