@@ -1,5 +1,5 @@
 {
-  "description": "point each session at the matching playbook, ask for a handoff after the third compaction, give plain worker subagents the worker rules, send back an edit that adds a comment, a skipped test or a function over 60 lines, review new commits when an interactive turn ends, and send a reply that ends by asking back to decide",
+  "description": "point each session at the matching playbook, ask for a handoff after the third compaction, give plain worker subagents the worker rules, send back an edit that adds a comment, a skipped test or a function over 60 lines, send a foreground wait loop to the background, review new commits when an interactive turn ends, and send a reply that ends by asking back to decide",
   "hooks": {
     "SessionStart": [
       {
@@ -41,6 +41,17 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/decide.py\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/wait.py\""
           }
         ]
       }

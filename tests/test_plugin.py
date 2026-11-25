@@ -70,6 +70,16 @@ def test_edit_hook_runs_the_comment_check():
     )
 
 
+def test_bash_hook_runs_the_wait_check():
+    hooks = json.loads((ROOT / 'hooks/hooks.json').read_text())['hooks']
+
+    entry = hooks['PreToolUse'][0]
+    assert entry['matcher'] == 'Bash'
+    assert entry['hooks'][0]['command'] == (
+        'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/wait.py"'
+    )
+
+
 def test_compaction_start_runs_the_handoff_script():
     hooks = json.loads((ROOT / 'hooks/hooks.json').read_text())['hooks']
 
