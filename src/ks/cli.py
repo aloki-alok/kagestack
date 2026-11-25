@@ -10,6 +10,9 @@ from ks.package import package
 from ks.screens import add_arguments as add_screen_arguments
 from ks.screens import screens
 from ks.setup import ManifestError, setup
+from ks.stuck import SUMMARY as STUCK_SUMMARY
+from ks.stuck import add_arguments as add_stuck_arguments
+from ks.stuck import stuck
 from ks.tools import tools
 
 
@@ -64,6 +67,7 @@ def main():
         package,
         'write the playbooks to .agents/skills for codex and opencode',
     ).add_argument('--check', action='store_true', help='fail if they are stale')
+    add_stuck_arguments(command('stuck', stuck, STUCK_SUMMARY))
     command('tools', tools, 'name faster, maintained replacements for old dev tools')
     add_screen_arguments(
         command(
