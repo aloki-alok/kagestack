@@ -46,19 +46,22 @@ def pull(number, checks='SUCCESS', idle=0, **changed):
     return {**plain, **changed}
 
 
-def page(pulls, next_cursor=None):
+def page(pulls, next_cursor=None, count=None):
     info = {'hasNextPage': bool(next_cursor), 'endCursor': next_cursor}
-    return json.dumps({'data': {'search': {'pageInfo': info, 'nodes': pulls}}})
+    search = {'issueCount': count or len(pulls), 'pageInfo': info, 'nodes': pulls}
+    return json.dumps({'data': {'search': search}})
 
 
-def ks_stuck(tmp_path, *pages, args=('--json',)):
+def ks_stuck(tmp_path, *pages, args=('--json',), count=None):
     gh = tmp_path / 'gh'
     gh.write_text(FAKE_GH.format(python=sys.executable))
     gh.chmod(0o755)
     cursors = ['', *(f'c{n}' for n in range(1, len(pages)))]
     for cursor, pulls in zip(cursors, pages, strict=True):
         following = cursors[cursors.index(cursor) + 1 :][:1]
-        (tmp_path / f'page{cursor}.json').write_text(page(pulls, *following))
+        (tmp_path / f'page{cursor}.json').write_text(
+            page(pulls, *following, count=count)
+        )
     return subprocess.run(
         [KS, 'stuck', *args],
         check=False,
@@ -166,6 +169,17 @@ def test_an_idle_pull_request_goes_back_to_a_person(tmp_path):
     assert 'close' in rows[2]['next']
 
 
+def test_the_idle_line_is_fourteen_days_and_only_moves_agent_work(tmp_path):
+    rows = stuck(
+        tmp_path,
+        pull(1, checks='FAILURE', idle=14),
+        pull(2, reviewDecision='REVIEW_REQUIRED', idle=40),
+    )
+
+    assert rows[1]['mover'] == 'person'
+    assert rows[2]['next'] == 'approve it, or say what blocks it'
+
+
 def test_stale_days_moves_the_idle_line(tmp_path):
     result = ks_stuck(
         tmp_path,
@@ -226,3 +240,46 @@ def test_nothing_stuck_says_so(tmp_path):
     result = ks_stuck(tmp_path, [pull(1, checks='PENDING')], args=())
 
     assert result.stdout.strip() == 'no stuck pull requests'
+
+
+def test_an_errored_check_is_red(tmp_path):
+    rows = stuck(tmp_path, pull(1, checks='ERROR'))
+
+    assert rows[1]['reason'] == 'red checks'
+
+
+def test_a_requested_change_is_stuck_even_while_checks_run(tmp_path):
+    rows = stuck(
+        tmp_path, pull(1, checks='PENDING', reviewDecision='CHANGES_REQUESTED')
+    )
+
+    assert rows[1]['reason'] == 'changes requested'
+
+
+def test_a_pull_request_with_no_commits_does_not_stop_the_list(tmp_path):
+    rows = stuck(
+        tmp_path,
+        pull(1, commits={'nodes': []}, reviewDecision='REVIEW_REQUIRED'),
+        pull(2, checks='FAILURE'),
+    )
+
+    assert rows[1]['reason'] == 'needs approval'
+    assert rows[2]['reason'] == 'red checks'
+
+
+def test_a_green_pull_request_github_has_not_merge_checked_is_left_out(tmp_path):
+    rows = stuck(
+        tmp_path,
+        pull(1, mergeable='UNKNOWN'),
+        pull(2, mergeable='UNKNOWN', checks='FAILURE'),
+    )
+
+    assert list(rows) == [2]
+
+
+def test_more_results_than_github_lists_is_said_out_loud(tmp_path):
+    result = ks_stuck(tmp_path, [pull(1, checks='FAILURE')], count=1200)
+
+    assert 'acme/shop has 1200 open pull requests' in result.stderr
+    assert 'first 1000' in result.stderr
+    assert len(json.loads(result.stdout)) == 1

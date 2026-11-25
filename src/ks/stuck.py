@@ -1,11 +1,13 @@
 import json
 import subprocess
+import sys
 from datetime import UTC, datetime
 from typing import NamedTuple
 
 SEARCH = """
 query($q: String!, $after: String) {
   search(query: $q, type: ISSUE, first: 50, after: $after) {
+    issueCount
     pageInfo { hasNextPage endCursor }
     nodes {
       ... on PullRequest {
@@ -21,6 +23,8 @@ query($q: String!, $after: String) {
 """
 
 SUMMARY = 'list my open pull requests that are stuck, and who moves each'
+
+SEARCH_LIMIT = 1000
 
 MOVERS = (('agent', 'for an agent'), ('person', 'for a person'))
 
@@ -44,14 +48,21 @@ def open_pulls(scope):
         query = f'q=is:pr is:open author:@me {scope}'
         reply = gh('api', 'graphql', '-F', query, *cursor, '-f', f'query={SEARCH}')
         found = json.loads(reply)['data']['search']
-        yield from found['nodes']
+        if after is None and found['issueCount'] > SEARCH_LIMIT:
+            print(
+                f'ks: {scope} has {found["issueCount"]} open pull requests, and '
+                f'GitHub lists only the first {SEARCH_LIMIT}',
+                file=sys.stderr,
+            )
+        yield from filter(None, found['nodes'])
         if not found['pageInfo']['hasNextPage']:
             return
         after = found['pageInfo']['endCursor']
 
 
 def checks(pull):
-    rollup = pull['commits']['nodes'][0]['commit']['statusCheckRollup']
+    commits = pull['commits']['nodes']
+    rollup = commits[0]['commit']['statusCheckRollup'] if commits else None
     return rollup['state'] if rollup else 'SUCCESS'
 
 
@@ -71,7 +82,7 @@ def verdict(pull):
         return None
     if pull['reviewDecision'] == 'REVIEW_REQUIRED':
         return Verdict('needs approval', 'person', 'approve it, or say what blocks it')
-    if pull['autoMergeRequest']:
+    if pull['autoMergeRequest'] or pull['mergeable'] == 'UNKNOWN':
         return None
     return Verdict('ready', 'agent', 'merge it if you may, else say who must')
 
