@@ -227,6 +227,34 @@ def test_all_reports_comments_in_every_language(repo):
     assert 'a name, a test, or the commit message' in result.stdout
 
 
+def test_all_reports_comments_in_config_style_and_shell_files(repo):
+    commit(
+        repo,
+        {
+            '.github/workflows/ci.yml': 'jobs:\n  # why\n  build:\n    runs-on: x\n',
+            'e.css': '.e {\n  /* why */\n  color: red;\n}\n',
+            'f.sh': '#!/usr/bin/env bash\n# why\necho f\n',
+        },
+    )
+
+    result = ks_check(repo, '--all')
+
+    assert result.returncode == 1
+    assert '.github/workflows/ci.yml:2: # why' in result.stdout
+    assert 'e.css:2: /* why */' in result.stdout
+    assert 'f.sh:2: # why' in result.stdout
+    assert 'f.sh:1' not in result.stdout
+
+
+def test_new_yaml_comment_fails(feature_branch):
+    commit(feature_branch, {'ci.yml': 'jobs:\n  # why HEAD^1\n  build: {}\n'})
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'ci.yml:2: # why HEAD^1' in result.stdout
+
+
 def test_docstring_fails(repo):
     commit(repo, {'a.py': 'def f():\n    """Explain f."""\n    return 1\n'})
 
@@ -277,6 +305,10 @@ def test_tool_directives_pass(repo):
                 '//# sourceMappingURL=b.js.map\n'
             ),
             'c.test.tsx': ('// @vitest-environment jsdom\ntest("x", () => {});\n'),
+            'e.tsx': '// oxlint-disable-next-line no-console\nconsole.log(1);\n',
+            'f.yml': '# yaml-language-server: $schema=./s.json\na: 1  # yamllint disable-line rule:truthy\n',
+            'g.css': '/* stylelint-disable-next-line color-no-hex */\n.g { color: #fff; }\n',
+            'h.sh': '#!/bin/sh\n# shellcheck disable=SC2086\necho $h\n',
             'd.test.ts': ('/** @jest-environment node */\ntest("y", () => {});\n'),
         },
     )

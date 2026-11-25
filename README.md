@@ -60,7 +60,7 @@ writes the playbooks to `.agents/skills`, where codex and opencode find them. `k
 
 ## ks check
 
-fails on comments in python, js, jsx, ts and tsx, docstrings included. tool directives that name their rule pass, like `noqa: F401`, `type: ignore[assignment]`, `eslint-disable-next-line no-undef` and `@ts-expect-error`. a bare `noqa`, `type: ignore`, `pyright: ignore`, `eslint-disable`, `@ts-ignore` or `@ts-nocheck` fails, because it silences the checks that catch real bugs too.
+fails on comments in python, js, jsx, ts, tsx, yaml, css and shell scripts, docstrings included. tool directives that name their rule pass, like `noqa: F401`, `type: ignore[assignment]`, `eslint-disable-next-line no-undef`, `oxlint-disable-next-line no-console`, `@ts-expect-error`, `shellcheck disable=SC2086` and `stylelint-disable-next-line color-no-hex`. a bare `noqa`, `type: ignore`, `pyright: ignore`, `eslint-disable`, `oxlint-disable`, `@ts-ignore` or `@ts-nocheck` fails, because it silences the checks that catch real bugs too.
 
 it also fails on two kinds of new mess:
 
