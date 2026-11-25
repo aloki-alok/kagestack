@@ -11,6 +11,13 @@ flowchart TD
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
 
+## 0.33.3 · Nov 25 · Queue the merge after the fresh review
+
+- **Before:** The `pr` playbook queued auto-merge right after opening the pull request. The fresh review runs when the turn ends, so the review came after the merge was already queued.
+- **After:** The playbook queues auto-merge once the review's findings are fixed and pushed.
+- **Why:** On Nov 25, #44 and #45 each merged at a green head before their review fixes were pushed, and each fix needed another pull request.
+- **Proof:** No eval. Seen on two pull requests.
+
 ## 0.33.2 · Nov 25 · The wait check reads shell quoting the way bash does
 
 - **Before:** 0.33.1 stripped quotes with a regex. A comment like `# it's here` or an escaped quote fooled it and hid a real `gh run watch`. A 20 KB unclosed heredoc made every shell command wait 2 seconds, and 50 KB took more than 8.

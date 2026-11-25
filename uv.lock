@@ -118,7 +118,7 @@ wheels = [
 
 [[package]]
 name = "kagestack"
-version = "0.33.2"
+version = "0.33.3"
 source = { editable = "." }
 dependencies = [
     { name = "ast-grep-cli" },
