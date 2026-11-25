@@ -283,3 +283,9 @@ def test_more_results_than_github_lists_is_said_out_loud(tmp_path):
     assert 'acme/shop has 1200 open pull requests' in result.stderr
     assert 'first 1000' in result.stderr
     assert len(json.loads(result.stdout)) == 1
+
+
+def test_exactly_as_many_results_as_github_lists_says_nothing(tmp_path):
+    result = ks_stuck(tmp_path, [pull(1, checks='FAILURE')], count=1000)
+
+    assert result.stderr == ''

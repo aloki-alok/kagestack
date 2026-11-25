@@ -54,7 +54,7 @@ def open_pulls(scope):
                 f'GitHub lists only the first {SEARCH_LIMIT}',
                 file=sys.stderr,
             )
-        yield from filter(None, found['nodes'])
+        yield from found['nodes']
         if not found['pageInfo']['hasNextPage']:
             return
         after = found['pageInfo']['endCursor']
