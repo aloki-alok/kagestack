@@ -127,16 +127,16 @@ def test_watch_in_a_block_or_substitution_is_sent_back():
     assert denied(run('if true; then gh run watch 1; fi'))
     assert denied(run('for r in 1 2; do gh run watch $r; done'))
     assert denied(run('if gh run watch 1; then echo ok; fi'))
+    assert denied(run('{ gh run watch 1; }'))
+    assert denied(run('r=`gh run watch 1`'))
+    assert denied(run('env CI=1 gh -R a/b run watch 1'))
+    assert denied(run('gh pr checks 1 -w'))
 
 
 def test_keyword_inside_an_argument_does_not_split_the_command():
     assert denied(run('gh pr checks do --watch'))
     assert denied(run('gh pr checks feature/do -w'))
     assert denied(run('gh pr checks --repo then-x/y --watch'))
-    assert denied(run('{ gh run watch 1; }'))
-    assert denied(run('r=`gh run watch 1`'))
-    assert denied(run('env CI=1 gh -R a/b run watch 1'))
-    assert denied(run('gh pr checks 1 -w'))
 
 
 def test_heredoc_ends_at_its_delimiter():
