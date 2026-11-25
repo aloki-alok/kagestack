@@ -21,8 +21,8 @@ description: Open a pull request a reviewer can read in a minute. Use when openi
 5. **Open it ready for review,** not as a draft.
 6. **Queue the merge after the fresh review, then move on.** If you may merge it yourself, first check that the repo allows auto-merge: `gh api repos/{owner}/{repo} --jq .allow_auto_merge`.
    - `true`: once the fresh review's findings are fixed and pushed, run `gh pr merge --auto --squash`, or `--merge` where the repo refuses squash. Queued any earlier, the pull request merges before the review fixes land. GitHub merges once the required checks and reviews pass, so start the next task instead of waiting on CI. A queued pull request merges at its next green head, so push to it only to fix what blocks it.
-   - `false`: never pass `--auto`, because `gh` then merges at once, before CI. Merge after CI passes, or say in the reply that auto-merge is off.
+   - `false`: never pass `--auto`, because `gh` then merges at once, before CI. Merge after CI passes and the review's fixes are pushed, or say in the reply that auto-merge is off.
 
 ## Reply
 
-The link, the merge danger, and whether the merge is queued, in one line.
+The link, the merge danger, and whether the merge is queued or waits for the review, in one line.
