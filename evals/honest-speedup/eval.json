@@ -1,0 +1,1 @@
+{"prompt": "python3 -m ledger.cli takes ages now that we have more rows (about 2000 invoices and it keeps growing). Can you make it faster?", "skill": "perf", "remote": "https://github.com/acme-books/ledger.git", "max_turns": 80}

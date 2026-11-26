@@ -22,6 +22,11 @@ a fresh agent that never read this repo built the tasks and hidden tests. it was
 | 2026-11-24 | Sonnet 5.5 | 30 | session text that reads the ask first vs 0.29.0: right fix or cause 10/10 vs 10/10, no added work 14/15 vs 13/15 | named its reading 5/10 vs 6/10, expert word glossed 9/10 vs 9/10, raw log quoted 4/5 vs 5/5 | 1.0x, not shipped |
 | 2026-11-24 | Sonnet 5.5 | 20 | `garden` vs 0.29.0, asks that name the mistake (money math, timezones): guard catches the old bugs 10/10 vs 10/10, live bugs fixed 10/10 vs 10/10 | cites 2 past fixes 8/10 vs 3/10 | 1.0x |
 | 2026-11-24 | Sonnet 5.5 | 20 | `garden` vs 0.29.0, asks that don't name it: "keeps breaking in the same ways" guard catches the old bugs 5/5 vs 2/5, nothing else touched 5/5 vs 3/5; "the old code here is bad" 0/5 vs 0/5 | cites 2 past fixes 5/5 vs 0/5 | 1.16x |
+| 2026-11-26 | Sonnet 5.5 | 10 | `bug-fix` that bisects a regression vs 0.35.1 (`regression-cause`): cause fixed 5/5 vs 5/5, decoy kept 5/5 vs 5/5, callers unchanged 5/5 vs 5/5 | none | 0.8x, not shipped |
+| 2026-11-26 | Sonnet 5.5 | 10 | same, 27 commits, cause in commit 15, no hint (`regression-cause-hard`): cause fixed 5/5 vs 5/5, retries ignored 5/5 vs 5/5, reminder rules kept 5/5 vs 5/5 | none | 1.04x, not shipped |
+| 2026-11-26 | Sonnet 5.5 | 10 | `perf` that reverts changes inside the spread and checks the timed part vs 0.35.1 (`honest-speedup`): 3x faster 5/5 vs 5/5, same output 5/5 vs 5/5, no idle edits 5/5 vs 5/5, honest claim 4/5 vs 5/5 (the miss was the scorer's) | none | 1.1x, not shipped |
+| 2026-11-26 | Sonnet 5.5 | 10 | `handoff` with a pick-up half vs 0.35.1 (`resume-branch`): main's tests 5/5 vs 5/5, prices in cents 5/5 vs 5/5, csv right 5/5 vs 5/5 | none | 1.0x, not shipped |
+| 2026-11-26 | Sonnet 5.5 | 10 | same, the stale claim hidden behind a clean merge and green tests (`resume-branch-hard`): surcharge carried 5/5 vs 4/5 (the miss renamed the function), csv matches checkout 5/5 vs 5/5 | none | 1.0x, not shipped |
 
 what changed after each:
 - the first one found `bug-fix` changed the bad-input error in 8/10 runs. the playbook now keeps what callers rely on.
@@ -35,6 +40,7 @@ what changed after each:
 - the ninth found that change made no picture series in any run and let concept pages grow to 850 words. reverted. building pictures up needs a tool or a check, not a sentence.
 - the tenth tied on every outcome: sonnet already picks the likely job and keeps scope on these asks. 8 of 10 runs read "see how we can reuse" as asking for advice, not a build. a retest needs real past asks that agents got wrong.
 - the eleventh and twelfth shipped `garden` on its unnamed-mistake win. "the old code here is bad" went to `refactor` in all 10 runs, and none read the history, so that wording is not garden's yet.
+- the last five tested lessons from pstack, the Cursor skill pack, and all tied: sonnet already found the real cause, reverted idle tweaks and caught the stale note in 50 of 50 runs on both sides. none shipped. a retest needs a cause that history and grep can't reach, such as one only a failing end-to-end run shows.
 
 ## author-built evals
 

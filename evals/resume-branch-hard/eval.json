@@ -1,0 +1,1 @@
+{"prompt": "Another session paused work on the bulk-quotes branch in this repo and left a note in its last commit. Please pick it up and finish the job.", "skill": "handoff", "remote": "https://github.com/acme/shipcost.git", "max_turns": 80}
