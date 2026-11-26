@@ -18,6 +18,11 @@ if args[:2] == ['repo', 'view']:
     print('acme/shop')
     sys.exit(0)
 after = next((a.split('=', 1)[1] for a in args if a.startswith('after=')), '')
+if any('milestones' in arg for arg in args):
+    name = next((a.split('=', 1)[1] for a in args if a.startswith('name=')), None)
+    found = here / (f'repo-{{name}}.json' if name else f'sprints{{after}}.json')
+    print(found.read_text() if found.exists() else {empty!r})
+    sys.exit(0)
 print((here / f'page{{after}}.json').read_text())
 """
 
@@ -52,9 +57,80 @@ def page(pulls, next_cursor=None, count=None):
     return json.dumps({'data': {'search': search}})
 
 
+EMPTY_SPRINTS = json.dumps(
+    {
+        'data': {
+            'repository': {'nameWithOwner': 'acme/shop', 'milestones': {'nodes': []}},
+            'repositoryOwner': {
+                'repositories': {
+                    'pageInfo': {'hasNextPage': False, 'endCursor': None},
+                    'nodes': [],
+                }
+            },
+        }
+    }
+)
+
+
+def issue(number, priority=None, pulled=False, idle=0):
+    return {
+        'number': number,
+        'title': f'issue {number}',
+        'updatedAt': days_ago(idle),
+        'labels': {'nodes': [{'name': priority}] if priority else []},
+        'closedByPullRequestsReferences': {'totalCount': int(pulled)},
+    }
+
+
+def sprint(number, *issues, title=None, closed=1, idle=0):
+    return {
+        'number': number,
+        'title': title or f'Sprint {number}: goal {number}',
+        'url': f'https://github.com/acme/shop/milestone/{number}',
+        'updatedAt': days_ago(idle),
+        'closedIssues': {'totalCount': closed},
+        'issues': {'nodes': list(issues)},
+    }
+
+
+def repo(name, *sprints):
+    return {'nameWithOwner': name, 'milestones': {'nodes': list(sprints)}}
+
+
+def write_sprints(tmp_path, *repo_pages):
+    cursors = ['', *(f'r{n}' for n in range(1, len(repo_pages)))]
+    for index, repos in enumerate(repo_pages):
+        following = cursors[index + 1] if index + 1 < len(cursors) else None
+        owner = {
+            'repositories': {
+                'pageInfo': {'hasNextPage': bool(following), 'endCursor': following},
+                'nodes': repos,
+            }
+        }
+        (tmp_path / f'sprints{cursors[index]}.json').write_text(
+            json.dumps({'data': {'repositoryOwner': owner}})
+        )
+        for found in repos:
+            name = found['nameWithOwner'].split('/')[1]
+            (tmp_path / f'repo-{name}.json').write_text(
+                json.dumps({'data': {'repository': found}})
+            )
+
+
+def sprint_rows(tmp_path, *sprints):
+    write_sprints(tmp_path, [repo('acme/shop', *sprints)])
+    result = ks_stuck(tmp_path, [])
+    assert result.returncode == 0, result.stderr
+    return {
+        row['number']: row
+        for row in json.loads(result.stdout)
+        if row['kind'] == 'sprint'
+    }
+
+
 def ks_stuck(tmp_path, *pages, args=('--json',), count=None):
     gh = tmp_path / 'gh'
-    gh.write_text(FAKE_GH.format(python=sys.executable))
+    gh.write_text(FAKE_GH.format(python=sys.executable, empty=EMPTY_SPRINTS))
     gh.chmod(0o755)
     cursors = ['', *(f'c{n}' for n in range(1, len(pages)))]
     for cursor, pulls in zip(cursors, pages, strict=True):
@@ -289,3 +365,129 @@ def test_exactly_as_many_results_as_github_lists_says_nothing(tmp_path):
     result = ks_stuck(tmp_path, [pull(1, checks='FAILURE')], count=1000)
 
     assert result.stderr == ''
+
+
+def test_a_sprint_hands_its_most_urgent_unstarted_issue_to_an_agent(tmp_path):
+    rows = sprint_rows(
+        tmp_path,
+        sprint(
+            4,
+            issue(5, 'P2'),
+            issue(6, 'P0', pulled=True),
+            issue(7, 'P1'),
+            issue(8),
+        ),
+    )
+
+    assert rows[4]['reason'] == 'next issue'
+    assert rows[4]['mover'] == 'agent'
+    assert rows[4]['next'] == 'start #7 (P1): issue 7'
+
+
+def test_an_issue_without_a_priority_comes_last_lowest_number_first(tmp_path):
+    rows = sprint_rows(tmp_path, sprint(1, issue(9), issue(3)))
+
+    assert rows[1]['next'] == 'start #3: issue 3'
+
+
+def test_a_sprint_whose_open_issues_all_have_pull_requests_is_not_stuck(tmp_path):
+    rows = sprint_rows(tmp_path, sprint(1, issue(2, 'P0', pulled=True)))
+
+    assert rows == {}
+
+
+def test_a_sprint_with_every_issue_closed_waits_for_a_person_to_close_it(tmp_path):
+    rows = sprint_rows(tmp_path, sprint(2, closed=6))
+
+    assert rows[2]['reason'] == 'all issues closed'
+    assert rows[2]['mover'] == 'person'
+    assert 'deployed' in rows[2]['next']
+
+
+def test_an_older_sprint_left_open_goes_to_a_person(tmp_path):
+    rows = sprint_rows(tmp_path, sprint(2, issue(4, 'P0')), sprint(5, issue(9, 'P1')))
+
+    assert rows[2]['reason'] == 'a newer sprint is open'
+    assert rows[2]['mover'] == 'person'
+    assert rows[5]['reason'] == 'next issue'
+
+
+def test_an_idle_sprint_goes_to_a_person(tmp_path):
+    rows = sprint_rows(
+        tmp_path,
+        sprint(1, issue(2, 'P0', idle=20), idle=20),
+    )
+
+    assert rows[1]['reason'] == 'next issue'
+    assert rows[1]['mover'] == 'person'
+    assert rows[1]['idle_days'] == 20
+
+
+def test_a_recently_touched_issue_keeps_its_sprint_awake(tmp_path):
+    rows = sprint_rows(tmp_path, sprint(1, issue(2, 'P0', idle=1), idle=30))
+
+    assert rows[1]['mover'] == 'agent'
+    assert rows[1]['idle_days'] == 1
+
+
+def test_a_milestone_not_named_as_a_sprint_is_left_out(tmp_path):
+    rows = sprint_rows(
+        tmp_path,
+        sprint(1, issue(2), title='Later: many workspaces'),
+        sprint(3, issue(4), title='P0 · Foundations'),
+    )
+
+    assert rows == {}
+
+
+def test_org_sprints_read_every_page_of_repos(tmp_path):
+    write_sprints(
+        tmp_path,
+        [repo('acme/shop', sprint(1, issue(2)))],
+        [
+            repo('acme/site', sprint(1, issue(7))),
+            repo('acme/docs', sprint(2, issue(3), title='Later: someday')),
+        ],
+    )
+
+    result = ks_stuck(tmp_path, [], args=('--json', '--org', 'acme'))
+
+    sprints = [row for row in json.loads(result.stdout) if row['kind'] == 'sprint']
+    assert [(row['repo'], row['next']) for row in sprints] == [
+        ('acme/shop', 'start #2: issue 2'),
+        ('acme/site', 'start #7: issue 7'),
+    ]
+    owners = [
+        arg for call in gh_calls(tmp_path) for arg in call if arg.startswith('login=')
+    ]
+    assert owners == ['login=acme', 'login=acme']
+    fetched = [
+        arg for call in gh_calls(tmp_path) for arg in call if arg.startswith('name=')
+    ]
+    assert fetched == ['name=shop', 'name=site']
+
+
+def test_the_plain_report_names_the_sprint(tmp_path):
+    write_sprints(tmp_path, [repo('acme/shop', sprint(3, issue(8, 'P0')))])
+
+    result = ks_stuck(tmp_path, [pull(1, checks='FAILURE')], args=())
+
+    assert result.stdout.startswith('2 for an agent')
+    assert (
+        'acme/shop "Sprint 3: goal 3"  next issue: start #8 (P0): issue 8'
+        in result.stdout
+    )
+
+
+def test_every_row_says_whether_it_is_a_pull_request(tmp_path):
+    rows = stuck(tmp_path, pull(1, checks='FAILURE'))
+
+    assert rows[1]['kind'] == 'pull'
+
+
+def test_a_new_sprint_with_no_issues_asks_an_agent_to_file_them(tmp_path):
+    rows = sprint_rows(tmp_path, sprint(1, closed=0))
+
+    assert rows[1]['reason'] == 'no issues'
+    assert rows[1]['mover'] == 'agent'
+    assert 'issue' in rows[1]['next']

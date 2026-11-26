@@ -20,12 +20,19 @@ Read `${CLAUDE_PLUGIN_ROOT}/src/ks/principles.md` before step 1.
    - Where it stops scaling: the limit in real units, and what happens at ten times that.
    Done when all three are written with evidence.
 5. **Sign-off on big changes only.** Schema, billing, auth, many modules, or anything one-way: show steps 1 to 4 and wait. Everything else: go on, and show them in the reply.
-6. **Build in slices.** Per slice: a failing test for the behavior, the minimal code, the repo's checks pass, one commit.
+6. **Plan big work as a sprint.** Big means more than one pull request. Smaller work skips issues, because its pull request is the record.
+   - Open a milestone named `Sprint N: <outcome>`, with N one past the repo's last sprint. If a sprint is already open, add to it, or finish it first.
+   - Open one issue per pull request. Its title is the outcome. Its body says "Done when" with one outcome a user could observe.
+   - Label each issue with its priority: `P0` blocks the outcome, `P1` is part of it, `P2` can move to a `Later` milestone. If a label is missing, create it with `gh label create`.
+   - Work the issues in priority order. Each pull request body says `Closes #N`.
+   - Close the sprint after its last issue closes and step 8 proves the outcome on the deployed app. `ks stuck` shows each open sprint and the next issue to start.
+   Done when every issue sits in the sprint with a priority, or the work fits one pull request.
+7. **Build in slices.** Per slice: a failing test for the behavior, the minimal code, the repo's checks pass, one commit.
    Done when every slice is green and committed.
-7. **Prove it on the real app.** Drive the feature the way a user does. Save the output or a screenshot.
+8. **Prove it on the real app.** Drive the feature the way a user does. Save the output or a screenshot.
    Done when the proof comes from the final commit.
-8. **Fresh review.** An agent with none of your reasoning reviews the plan and the diff. Fix what it shows with a run.
-9. **Flag what you passed.** List bad code you saw and did not fix: file:line and the right shape, one line each. Open issues for them only if the user asks.
+9. **Fresh review.** An agent with none of your reasoning reviews the plan and the diff. Fix what it shows with a run.
+10. **Flag what you passed.** List bad code you saw and did not fix: file:line and the right shape, one line each. If one of them is a bug a user could hit, open an issue for it with a priority label, and link the issue in your reply.
 
 ## Reply
 

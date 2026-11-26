@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -22,7 +23,50 @@ query($q: String!, $after: String) {
 }
 """
 
-SUMMARY = 'list my open pull requests that are stuck, and who moves each'
+MILESTONES = """
+nameWithOwner
+milestones(states: OPEN, first: 20) {
+  nodes {
+    number title url updatedAt
+    closedIssues: issues(states: CLOSED) { totalCount }
+    issues(states: OPEN, first: 50) {
+      nodes {
+        number title updatedAt
+        labels(first: 10) { nodes { name } }
+        closedByPullRequestsReferences(first: 1, includeClosedPrs: false) {
+          totalCount
+        }
+      }
+    }
+  }
+}
+"""
+
+REPO_SPRINTS = f"""
+query($owner: String!, $name: String!) {{
+  repository(owner: $owner, name: $name) {{ {MILESTONES} }}
+}}
+"""
+
+OWNER_SPRINTS = """
+query($login: String!, $after: String) {
+  repositoryOwner(login: $login) {
+    repositories(first: 100, after: $after) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        nameWithOwner
+        milestones(states: OPEN, first: 20) { nodes { title } }
+      }
+    }
+  }
+}
+"""
+
+SPRINT_TITLE = re.compile(r'Sprint \d+')
+
+PRIORITIES = ('P0', 'P1', 'P2')
+
+SUMMARY = 'list my stuck pull requests and open sprints, and who moves each'
 
 SEARCH_LIMIT = 1000
 
@@ -87,9 +131,18 @@ def verdict(pull):
     return Verdict('ready', 'agent', 'merge it if you may, else say who must')
 
 
-def idle_days(pull, now):
-    updated = datetime.fromisoformat(pull['updatedAt'].replace('Z', '+00:00'))
+def idle_days(*nodes, now):
+    updated = max(
+        datetime.fromisoformat(node['updatedAt'].replace('Z', '+00:00'))
+        for node in nodes
+    )
     return (now - updated).days
+
+
+def wake(found, idle, stale_days, stop):
+    if idle >= stale_days and found.mover == 'agent':
+        return Verdict(found.reason, 'person', f'idle {idle} days: {stop}')
+    return found
 
 
 def stuck_rows(pulls, stale_days, now):
@@ -97,20 +150,127 @@ def stuck_rows(pulls, stale_days, now):
         found = verdict(pull)
         if not found:
             continue
-        idle = idle_days(pull, now)
-        if idle >= stale_days and found.mover == 'agent':
-            found = Verdict(
-                found.reason, 'person', f'idle {idle} days: revive it or close it'
-            )
+        idle = idle_days(pull, now=now)
         yield {
+            'kind': 'pull',
             'repo': pull['repository']['nameWithOwner'],
             'number': pull['number'],
             'title': pull['title'],
             'url': pull['url'],
             'base': pull['baseRefName'],
             'idle_days': idle,
-            **found._asdict(),
+            **wake(found, idle, stale_days, 'revive it or close it')._asdict(),
         }
+
+
+def urgency(issue):
+    names = [label['name'] for label in issue['labels']['nodes']]
+    rank = min(
+        (PRIORITIES.index(name) for name in names if name in PRIORITIES),
+        default=len(PRIORITIES),
+    )
+    return rank, issue['number']
+
+
+def sprint_verdict(sprint, newest):
+    issues = sprint['issues']['nodes']
+    if not issues and not sprint['closedIssues']['totalCount']:
+        return Verdict(
+            'no issues',
+            'agent',
+            'open its issues, one per pull request, with a priority',
+        )
+    if not issues:
+        return Verdict(
+            'all issues closed',
+            'person',
+            'check its work is deployed and works, then close the sprint',
+        )
+    if not newest:
+        return Verdict(
+            'a newer sprint is open',
+            'person',
+            'move what is left to the newest sprint or to Later, then close it',
+        )
+    unstarted = [
+        issue
+        for issue in issues
+        if not issue['closedByPullRequestsReferences']['totalCount']
+    ]
+    if not unstarted:
+        return None
+    first = min(unstarted, key=urgency)
+    rank, _ = urgency(first)
+    priority = f' ({PRIORITIES[rank]})' if rank < len(PRIORITIES) else ''
+    return Verdict(
+        'next issue', 'agent', f'start #{first["number"]}{priority}: {first["title"]}'
+    )
+
+
+def sprint_rows(repos, stale_days, now):
+    for repo in repos:
+        sprints = [
+            sprint
+            for sprint in repo['milestones']['nodes']
+            if SPRINT_TITLE.match(sprint['title'])
+        ]
+        newest = max((sprint['number'] for sprint in sprints), default=None)
+        for sprint in sprints:
+            found = sprint_verdict(sprint, sprint['number'] == newest)
+            if not found:
+                continue
+            idle = idle_days(sprint, *sprint['issues']['nodes'], now=now)
+            stop = 'finish it, or move what is left to Later'
+            yield {
+                'kind': 'sprint',
+                'repo': repo['nameWithOwner'],
+                'number': sprint['number'],
+                'title': sprint['title'],
+                'url': sprint['url'],
+                'idle_days': idle,
+                **wake(found, idle, stale_days, stop)._asdict(),
+            }
+
+
+def has_sprint(repo):
+    return any(SPRINT_TITLE.match(m['title']) for m in repo['milestones']['nodes'])
+
+
+def owner_repos(login):
+    after = None
+    while True:
+        cursor = [] if after is None else ['-F', f'after={after}']
+        query = ['-F', f'login={login}', *cursor, '-f', f'query={OWNER_SPRINTS}']
+        found = json.loads(gh('api', 'graphql', *query))['data']['repositoryOwner']
+        for repo in found['repositories']['nodes']:
+            if has_sprint(repo):
+                yield one_repo(repo['nameWithOwner'])
+        if not found['repositories']['pageInfo']['hasNextPage']:
+            return
+        after = found['repositories']['pageInfo']['endCursor']
+
+
+def one_repo(name_with_owner):
+    owner, name = name_with_owner.split('/')
+    query = [
+        '-F',
+        f'owner={owner}',
+        '-F',
+        f'name={name}',
+        '-f',
+        f'query={REPO_SPRINTS}',
+    ]
+    return json.loads(gh('api', 'graphql', *query))['data']['repository']
+
+
+def line(row):
+    where = (
+        f'{row["repo"]}#{row["number"]}'
+        if row['kind'] == 'pull'
+        else f'{row["repo"]} "{row["title"]}"'
+    )
+    title = f'  ({row["title"]})' if row['kind'] == 'pull' else ''
+    return f'  {where}  {row["reason"]}: {row["next"]}{title}'
 
 
 def report(rows):
@@ -119,12 +279,7 @@ def report(rows):
         mine = [row for row in rows if row['mover'] == mover]
         if not mine:
             continue
-        lines = [
-            f'  {row["repo"]}#{row["number"]}  {row["reason"]}: {row["next"]}'
-            f'  ({row["title"]})'
-            for row in mine
-        ]
-        groups.append('\n'.join([f'{len(mine)} {label}', *lines]))
+        groups.append('\n'.join([f'{len(mine)} {label}', *map(line, mine)]))
     return '\n\n'.join(groups) or 'no stuck pull requests'
 
 
@@ -150,6 +305,14 @@ def stuck(args):
         here = gh('repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner')
         scopes = [f'repo:{here.strip()}']
     pulls = [pull for scope in scopes for pull in open_pulls(scope)]
-    rows = list(stuck_rows(pulls, args.stale_days, datetime.now(UTC)))
+    if args.org:
+        repos = [repo for org in args.org for repo in owner_repos(org)]
+    else:
+        repos = [one_repo(here.strip())]
+    now = datetime.now(UTC)
+    rows = [
+        *stuck_rows(pulls, args.stale_days, now),
+        *sprint_rows(repos, args.stale_days, now),
+    ]
     print(json.dumps(rows, indent=2) if args.json else report(rows))
     return 0

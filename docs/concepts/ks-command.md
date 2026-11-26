@@ -26,7 +26,7 @@ Install it with `uv tool install git+https://github.com/aloki-alok/kagestack`.
 
 ## Helpers
 
-- `ks stuck` lists your open pull requests that can't move, with the reason and who moves each one next: an agent or a person. `--org <name>` covers a whole org.
+- `ks stuck` lists your open pull requests that can't move and your open sprints, with the reason and who moves each one next: an agent or a person. `--org <name>` covers a whole org.
 - `ks tools` names faster, maintained replacements for old dev tools, such as ruff for flake8.
 - `ks screens <url or file>` screenshots a page on phones, a tablet and desktops in Chromium, WebKit and Firefox, and lists sideways scroll, page errors and console errors.
 - `ks package` copies the playbooks to `.agents/skills`, for Codex and OpenCode.
