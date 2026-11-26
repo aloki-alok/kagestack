@@ -174,6 +174,12 @@ def urgency(issue):
 
 def sprint_verdict(sprint, newest):
     issues = sprint['issues']['nodes']
+    if not issues and not sprint['closedIssues']['totalCount']:
+        return Verdict(
+            'no issues',
+            'agent',
+            'open its issues, one per pull request, with a priority',
+        )
     if not issues:
         return Verdict(
             'all issues closed',

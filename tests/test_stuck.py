@@ -483,3 +483,11 @@ def test_every_row_says_whether_it_is_a_pull_request(tmp_path):
     rows = stuck(tmp_path, pull(1, checks='FAILURE'))
 
     assert rows[1]['kind'] == 'pull'
+
+
+def test_a_new_sprint_with_no_issues_asks_an_agent_to_file_them(tmp_path):
+    rows = sprint_rows(tmp_path, sprint(1, closed=0))
+
+    assert rows[1]['reason'] == 'no issues'
+    assert rows[1]['mover'] == 'agent'
+    assert 'issue' in rows[1]['next']
