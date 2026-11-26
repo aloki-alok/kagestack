@@ -5,12 +5,19 @@ flowchart TD
   C --> D["Nov 22: decide instead of asking, ks check on every commit"]
   D --> E["Nov 24: reviewer finds rebuilt code, handoff, garden"]
   E --> F["Nov 25: agents queue the merge and wait in the background"]
-  F --> G["Nov 26: ks check reads yaml, css and shell comments, ks stuck says why a pull request waits"]:::check
+  F --> G["Nov 26: ks check reads yaml, css and shell comments, ks stuck says why a pull request waits, big features run as sprints"]:::check
 ```
 
 # Changes, release by release
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
+
+## 0.35.0 · Nov 26 · Big features run as a sprint of issues
+
+- **Before:** A feature that took several pull requests had no list of its parts. Sprints existed only where someone opened them by hand, and they piled up: Kage had five open at once, and the four older ones still held 9 issues nobody moved.
+- **After:** The `feature` playbook opens a `Sprint N: <outcome>` milestone for work bigger than one pull request. Each pull request gets one issue with a `P0`, `P1` or `P2` label and a "Done when" line, and its body says `Closes #N`. The sprint closes only after the outcome works on the deployed app. `ks stuck` lists open sprints: the newest hands its most urgent issue with no pull request to an agent, and older ones go to a person to move their leftovers.
+- **Why:** Merged is not done. A sprint gives a big change one place where "finished" means deployed and checked, and `ks stuck` makes a stalled sprint as visible as a stalled pull request.
+- **Proof:** No eval. An agent without the step never opens a sprint, so there is no tie to test against. 11 new `ks stuck` tests run against a stand-in `gh`. On the real Kage repo it named #659 (P1) as Sprint 7's next issue and skipped #661, which has a pull request. `ks stuck --org Omnidim --org aloki-alok` ran in 20 s.
 
 ## 0.34.1 · Nov 26 · A version tag after a pinned action passes
 
