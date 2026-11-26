@@ -5,12 +5,21 @@ flowchart TD
   C --> D["Nov 22: decide instead of asking, ks check on every commit"]
   D --> E["Nov 24: reviewer finds rebuilt code, handoff, garden"]
   E --> F["Nov 25: agents queue the merge and wait in the background"]
-  F --> G["Nov 26: ks check reads yaml, css and shell comments, ks stuck says why a pull request waits, big features run as sprints"]:::check
+  F --> G["Nov 26: ks check reads yaml, css and shell comments, ks stuck says why a pull request waits, big features run as sprints"]
+  G --> H["Nov 26: risky diffs get reviewers on two models, long runs keep a decision log"]:::check
 ```
 
 # Changes, release by release
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
+
+## 0.36.0 · Nov 26 · Risky diffs get reviewers on two models
+
+- **Before:** One fresh reviewer on one model checked every diff, a refund change the same as a typo fix. A long or unattended run left no record of why it chose what it did, and coming back to one meant reading the whole session to find what waited on you.
+- **After:** `interrogate` runs a Claude reviewer and Codex on a diff that touches money, auth, permissions, call dispatch, data writes or a migration. Each works in its own worktree, and a finding counts only when a rerun at the head shows it. `decision-log` keeps one row per decision, with its proof, inside `.git`. `catch-up` opens with every call that waits on you.
+- **Why:** These are the parts of pstack, Cursor's skill pack, that kagestack had no twin for. pstack's other lessons were already in a playbook, or tied when tested (below).
+- **Proof:** No eval for the three new skills: `evals/run.py` runs one headless prompt, so it can't stage two reviewers or a user who leaves and comes back. On a refund diff with a planted over-refund bug and green tests, both reviewers found the bug, the rerun kept it, and a Claude finding about `int()` was dropped because its rerun kept the total under the charge. The decision log ran on the sprint that built it and caught its own relative path and a wrong file:line.
+- **Not shipped:** `bug-fix` bisecting a regression, `perf` reverting a change inside the run-to-run spread, and `handoff` with a pick-up half. All three tied on every fact in blind evals, bisect and pick-up on two tasks each: sonnet already does them.
 
 ## 0.35.1 · Nov 26 · The lowest open sprint is current
 

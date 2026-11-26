@@ -4,7 +4,7 @@ flowchart LR
   MAP --> BUG["Something broken: bug-fix"]
   MAP --> FEAT["New behavior: feature"]
   MAP --> REF["Cleanup: refactor"]
-  MAP --> MORE["... 9 more"]
+  MAP --> MORE["... 12 more"]
   BUG --> STEPS["Steps, each ending in proof"]:::check
   FEAT --> STEPS
   REF --> STEPS
