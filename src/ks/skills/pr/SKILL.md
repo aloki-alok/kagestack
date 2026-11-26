@@ -12,7 +12,7 @@ description: Open a pull request a reviewer can read in a minute. Use when openi
 3. **Find the template.** The repo's own `.github/pull_request_template.md`, else the org default:
    `gh api repos/<owner>/.github/contents/.github/pull_request_template.md --jq .content | base64 -d`.
    Done when you have the template, or both lookups came back empty.
-4. **Body.** Fill in the template, keeping its markers. No template: under 40 lines, these headings in order, dropping empty ones:
+4. **Body.** If the change finishes an issue, the body says `Closes #N`, so the merge closes it. Fill in the template, keeping its markers. No template: under 40 lines, these headings in order, dropping empty ones:
    - `## Why`: the problem in the user's terms.
    - `## What changed`: the smallest view: a file tree, a call tree or pseudocode.
    - `## Proof`: the command, red before and green after. Link long logs.
