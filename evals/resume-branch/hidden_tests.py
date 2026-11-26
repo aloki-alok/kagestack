@@ -1,4 +1,4 @@
-MANY = '''
+MANY = """
 import unittest
 from shipcost.bulk import quote_many
 from shipcost.shipping import quote
@@ -15,9 +15,9 @@ class T(unittest.TestCase):
     def test_many(self):
         self.assertEqual(quote_many(ORDERS), [175, 73, 73, 2363])
         self.assertEqual(quote_many(ORDERS), [quote(o["weight_kg"], o["zone"]) for o in ORDERS])
-'''
+"""
 
-CSV = '''
+CSV = """
 import os, tempfile, unittest
 from shipcost.export import export_csv
 
@@ -44,4 +44,4 @@ class T(unittest.TestCase):
             export_csv(ORDERS, path)
             with open(path) as f:
                 self.assertEqual(f.read().splitlines(), EXPECTED)
-'''
+"""

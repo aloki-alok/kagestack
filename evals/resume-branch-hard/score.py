@@ -33,7 +33,9 @@ def score(run):
         (work / 'tests' / '__init__.py').write_text('')
         with run.tree('main', git_dir=run.origin) as main:
             for name in MAIN_TESTS:
-                shutil.copy(main / 'tests' / f'{name}.py', work / 'tests' / f'{name}.py')
+                shutil.copy(
+                    main / 'tests' / f'{name}.py', work / 'tests' / f'{name}.py'
+                )
         (work / 'tests' / 'test_h_many.py').write_text(HIDDEN['MANY'])
         (work / 'tests' / 'test_h_csv.py').write_text(HIDDEN['CSV'])
         facts = {

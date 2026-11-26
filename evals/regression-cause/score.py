@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-CAUSE = '''
+CAUSE = """
 import unittest
 
 from shop.cart import Cart
@@ -44,9 +44,9 @@ class Cause(unittest.TestCase):
         cart.add_item('mug')
         order = place_order(cart, 'UK')
         self.assertEqual(order['total'], 3087)
-'''
+"""
 
-ROUNDING = '''
+ROUNDING = """
 import unittest
 
 from shop.money import percent_of
@@ -57,9 +57,9 @@ class Rounding(unittest.TestCase):
         self.assertEqual(percent_of(125, 10), 13)
         self.assertEqual(percent_of(25, 10), 3)
         self.assertEqual(percent_of(105, 10), 11)
-'''
+"""
 
-API = '''
+API = """
 import unittest
 
 from shop.cart import Cart
@@ -88,7 +88,7 @@ class Api(unittest.TestCase):
         cart.add_item('spoon')
         with self.assertRaises(CouponError):
             cart.apply_coupon('SAVE10')
-'''
+"""
 
 
 def passes(repo, name, source):

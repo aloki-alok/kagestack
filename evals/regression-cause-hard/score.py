@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-CAUSE = '''
+CAUSE = """
 import unittest
 from datetime import date
 
@@ -31,9 +31,9 @@ class Cause(unittest.TestCase):
             ledger.record('INV-1', f'ch_{number}', 1000, date(2026, 10, number))
         self.assertEqual(ledger.invoices['INV-1'].balance(), 0)
         self.assertEqual(due_reminders(ledger, date(2026, 11, 20)), [])
-'''
+"""
 
-RETRIES = '''
+RETRIES = """
 import unittest
 from datetime import date
 
@@ -58,9 +58,9 @@ class Retries(unittest.TestCase):
         self.assertTrue(ledger.record('INV-1', 'ch_1', 3000, date(2026, 10, 2)))
         self.assertTrue(ledger.record('INV-2', 'ch_2', 3000, date(2026, 10, 2)))
         self.assertTrue(ledger.invoices['INV-2'].paid)
-'''
+"""
 
-REMINDERS = '''
+REMINDERS = """
 import unittest
 from datetime import date
 
@@ -96,7 +96,7 @@ class Reminders(unittest.TestCase):
         ledger.add(Invoice('M', 'acme', 3000, date(2026, 10, 1)))
         ledger.invoices['M'].last_reminded = date(2026, 10, 18)
         self.assertEqual(due_reminders(ledger, date(2026, 10, 20)), [])
-'''
+"""
 
 
 def passes(repo, name, source):

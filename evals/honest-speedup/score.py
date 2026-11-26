@@ -26,9 +26,7 @@ def best(cwd, runs):
 
 def claims(text):
     found = [float(m) for m in re.findall(r'(\d+(?:\.\d+)?)\s*(?:x|×)(?![a-z])', text)]
-    found += [
-        float(m) for m in re.findall(r'(\d+(?:\.\d+)?)\s*(?:times|-fold)', text)
-    ]
+    found += [float(m) for m in re.findall(r'(\d+(?:\.\d+)?)\s*(?:times|-fold)', text)]
     for pct in re.findall(r'(\d+(?:\.\d+)?)\s*%\s*(?:faster|less|reduction)', text):
         if float(pct) < 100:
             found.append(1 / (1 - float(pct) / 100))
