@@ -404,12 +404,35 @@ def test_a_sprint_with_every_issue_closed_waits_for_a_person_to_close_it(tmp_pat
     assert 'deployed' in rows[2]['next']
 
 
-def test_an_older_sprint_left_open_goes_to_a_person(tmp_path):
-    rows = sprint_rows(tmp_path, sprint(2, issue(4, 'P0')), sprint(5, issue(9, 'P1')))
+def test_the_lowest_open_sprint_is_current_and_later_ones_wait(tmp_path):
+    rows = sprint_rows(tmp_path, sprint(5, issue(9, 'P1')), sprint(2, issue(4, 'P0')))
 
-    assert rows[2]['reason'] == 'a newer sprint is open'
-    assert rows[2]['mover'] == 'person'
-    assert rows[5]['reason'] == 'next issue'
+    assert rows[2]['reason'] == 'next issue'
+    assert rows[2]['next'] == 'start #4 (P0): issue 4'
+    assert 5 not in rows
+
+
+def test_a_named_sprint_series_counts_by_its_own_numbers(tmp_path):
+    rows = sprint_rows(
+        tmp_path,
+        sprint(10, issue(1), title='Phone sprint 2: messages'),
+        sprint(11, issue(2), title='Phone sprint 3: shared parts'),
+        sprint(4, issue(3), title='Sprint 7: terminal'),
+    )
+
+    assert rows[10]['next'] == 'start #1: issue 1'
+    assert rows[4]['next'] == 'start #3: issue 3'
+    assert 11 not in rows
+
+
+def test_sprint_ten_comes_after_sprint_nine(tmp_path):
+    rows = sprint_rows(
+        tmp_path,
+        sprint(1, issue(1), title='Sprint 10: later'),
+        sprint(2, issue(2), title='Sprint 9: now'),
+    )
+
+    assert list(rows) == [2]
 
 
 def test_an_idle_sprint_goes_to_a_person(tmp_path):
@@ -491,3 +514,10 @@ def test_a_new_sprint_with_no_issues_asks_an_agent_to_file_them(tmp_path):
     assert rows[1]['reason'] == 'no issues'
     assert rows[1]['mover'] == 'agent'
     assert 'issue' in rows[1]['next']
+
+
+def test_a_finished_sprint_asks_to_close_and_the_next_one_is_current(tmp_path):
+    rows = sprint_rows(tmp_path, sprint(1, closed=4), sprint(2, issue(5, 'P1')))
+
+    assert rows[1]['reason'] == 'all issues closed'
+    assert rows[2]['next'] == 'start #5 (P1): issue 5'

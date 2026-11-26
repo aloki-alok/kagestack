@@ -21,7 +21,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/src/ks/principles.md` before step 1.
    Done when all three are written with evidence.
 5. **Sign-off on big changes only.** Schema, billing, auth, many modules, or anything one-way: show steps 1 to 4 and wait. Everything else: go on, and show them in the reply.
 6. **Plan big work as a sprint.** Big means more than one pull request. Smaller work skips issues, because its pull request is the record.
-   - Open a milestone named `Sprint N: <outcome>`, with N one past the repo's last sprint. If a sprint is already open, add to it, or finish it first.
+   - Open a milestone named `Sprint N: <outcome>`, with N one past the repo's last sprint. Sprints run in number order, so if one is open, add to it or queue yours behind it.
    - Open one issue per pull request. Its title is the outcome. Its body says "Done when" with one outcome a user could observe.
    - Label each issue with its priority: `P0` blocks the outcome, `P1` is part of it, `P2` can move to a `Later` milestone. If a label is missing, create it with `gh label create`.
    - Work the issues in priority order. Each pull request body says `Closes #N`.

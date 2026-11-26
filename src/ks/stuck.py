@@ -62,7 +62,7 @@ query($login: String!, $after: String) {
 }
 """
 
-SPRINT_TITLE = re.compile(r'Sprint \d+')
+SPRINT_TITLE = re.compile(r'(.*?)\bsprint (\d+)\b', re.IGNORECASE)
 
 PRIORITIES = ('P0', 'P1', 'P2')
 
@@ -172,25 +172,25 @@ def urgency(issue):
     return rank, issue['number']
 
 
-def sprint_verdict(sprint, newest):
-    issues = sprint['issues']['nodes']
-    if not issues and not sprint['closedIssues']['totalCount']:
-        return Verdict(
-            'no issues',
-            'agent',
-            'open its issues, one per pull request, with a priority',
-        )
-    if not issues:
+def finished(sprint):
+    return not sprint['issues']['nodes'] and sprint['closedIssues']['totalCount']
+
+
+def sprint_verdict(sprint, current):
+    if finished(sprint):
         return Verdict(
             'all issues closed',
             'person',
             'check its work is deployed and works, then close the sprint',
         )
-    if not newest:
+    if not current:
+        return None
+    issues = sprint['issues']['nodes']
+    if not issues:
         return Verdict(
-            'a newer sprint is open',
-            'person',
-            'move what is left to the newest sprint or to Later, then close it',
+            'no issues',
+            'agent',
+            'open its issues, one per pull request, with a priority',
         )
     unstarted = [
         issue
@@ -210,13 +210,16 @@ def sprint_verdict(sprint, newest):
 def sprint_rows(repos, stale_days, now):
     for repo in repos:
         sprints = [
-            sprint
+            (series, sprint)
             for sprint in repo['milestones']['nodes']
-            if SPRINT_TITLE.match(sprint['title'])
+            if (series := sprint_series(sprint['title']))
         ]
-        newest = max((sprint['number'] for sprint in sprints), default=None)
-        for sprint in sprints:
-            found = sprint_verdict(sprint, sprint['number'] == newest)
+        current = {}
+        for (name, number), sprint in sprints:
+            if not finished(sprint) and number < current.get(name, number + 1):
+                current[name] = number
+        for (name, number), sprint in sprints:
+            found = sprint_verdict(sprint, current.get(name) == number)
             if not found:
                 continue
             idle = idle_days(sprint, *sprint['issues']['nodes'], now=now)
@@ -232,8 +235,13 @@ def sprint_rows(repos, stale_days, now):
             }
 
 
+def sprint_series(title):
+    found = SPRINT_TITLE.match(title)
+    return found and (found[1].strip().lower(), int(found[2]))
+
+
 def has_sprint(repo):
-    return any(SPRINT_TITLE.match(m['title']) for m in repo['milestones']['nodes'])
+    return any(sprint_series(m['title']) for m in repo['milestones']['nodes'])
 
 
 def owner_repos(login):

@@ -12,6 +12,13 @@ flowchart TD
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
 
+## 0.35.1 · Nov 26 · The lowest open sprint is current
+
+- **Before:** `ks stuck` matched only titles that start with `Sprint N`, so the dashboard's `Phone sprint 2` to `4` never showed. It also took the newest sprint as current. A team that plans sprints ahead would see the planned sprint handed to an agent and the live one flagged as left behind.
+- **After:** Any title with `sprint N` counts, and each prefix is its own series. The lowest open sprint in a series is current, later ones wait, and a sprint with every issue closed is still listed to close.
+- **Why:** The first real repo with sprints planned ahead broke both rules the day they shipped.
+- **Proof:** No eval. Four tests were red before the fix. On the dashboard, Phone sprint 2 now hands #2301 to an agent. On Kage, Sprint 2 is current with #433.
+
 ## 0.35.0 · Nov 26 · Big features run as a sprint of issues
 
 - **Before:** A feature that took several pull requests had no list of its parts. Sprints existed only where someone opened them by hand, and they piled up: Kage had five open at once, and the four older ones still held 9 issues nobody moved.
