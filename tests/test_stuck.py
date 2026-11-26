@@ -514,3 +514,10 @@ def test_a_new_sprint_with_no_issues_asks_an_agent_to_file_them(tmp_path):
     assert rows[1]['reason'] == 'no issues'
     assert rows[1]['mover'] == 'agent'
     assert 'issue' in rows[1]['next']
+
+
+def test_a_finished_sprint_asks_to_close_and_the_next_one_is_current(tmp_path):
+    rows = sprint_rows(tmp_path, sprint(1, closed=4), sprint(2, issue(5, 'P1')))
+
+    assert rows[1]['reason'] == 'all issues closed'
+    assert rows[2]['next'] == 'start #5 (P1): issue 5'

@@ -91,7 +91,7 @@ ks stuck --org acme
 
 a conflict, a red check or a requested change goes to an agent. a missing approval, a draft or a `hold` label waits for a person. after 14 idle days a person decides, so an agent never revives work that may be dead.
 
-a sprint is a milestone named `Sprint N: <outcome>`, and the `feature` playbook opens one for work bigger than one pull request. the newest sprint hands its most urgent issue with no pull request to an agent. a sprint with every issue closed waits for a person to check the deploy and close it. an older sprint left open waits for a person to move its leftovers.
+a sprint is a milestone named `Sprint N: <outcome>`, and the `feature` playbook opens one for work bigger than one pull request. sprints run in number order, so the lowest open one is current and later ones wait their turn. the current sprint hands its most urgent issue with no pull request to an agent. a sprint with every issue closed waits for a person to check the deploy and close it. a title like `Phone sprint 2` is its own series.
 
 ## ks tools
 

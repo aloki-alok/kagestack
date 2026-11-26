@@ -1,6 +1,6 @@
 [project]
 name = "kagestack"
-version = "0.35.0"
+version = "0.35.1"
 description = "checks that keep coding agents writing clean code"
 readme = "README.md"
 license = "MIT"
