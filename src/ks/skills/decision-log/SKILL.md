@@ -7,7 +7,7 @@ description: Keep a log of each decision in a long or unattended run, with the p
 
 A person who comes back to a long run trusts it only when each decision points at its proof.
 
-1. **Open the log** at `log=$(git rev-parse --path-format=absolute --git-path kagestack-decisions.tsv)`. It sits inside `.git`, so it is never committed and each worktree keeps its own. On first use, write the header: `time	decision	why	proof	result`.
+1. **Open the log** at `log=$(git rev-parse --path-format=absolute --git-path kagestack-decisions.tsv 2>/dev/null || echo "$PWD/kagestack-decisions.tsv")`. In a repo it sits inside `.git`, so it is never committed and each worktree keeps its own. On first use, write the header: `time	decision	why	proof	result`.
 2. **Add a row at each decision point:** a fork you chose, a step finished with its check, a revert and what set it off, a blocker. Skip routine actions.
    `printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "<decision>" "<why>" "<proof>" "<result>" >> "$log"`
    - Each cell is one line with no tabs, written the way you would tell a teammate.

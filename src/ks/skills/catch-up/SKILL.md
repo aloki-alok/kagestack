@@ -1,13 +1,13 @@
 ---
 name: catch-up
-description: Tell the user what changed in this session since their last message, and every call that waits on them, so they can decide from the reply alone. Use when they come back to a long run, or ask what happened while they were away.
+description: Tell the user what changed in this session since their last message, and every call that waits on them, so they can decide from the reply alone. Use when they come back after being away from a long run and ask what happened. Not for a question about the step you just took.
 ---
 
 # Catch up
 
 The user remembers their last message and nothing after it. Notifications and subagent reports are not their messages. Keep this turn read only.
 
-1. **Gather what changed:** your work since their last message, subagent reports, and the current state of each pull request, check run and agent this session touched. Check each number against its source.
+1. **Gather what changed:** your work since their last message, the decision log's new rows if the run kept one, subagent reports, and the current state of each pull request, check run and agent this session touched. Check each number against its source.
 2. **List the calls that wait on them:** a product choice, an approval, an irreversible step, or access you lack. Include calls raised earlier that are still open. Work you can still do yourself is not a call. Never invent one.
 3. **Write it.**
    - Line one names what waits on them, or says nothing does.
