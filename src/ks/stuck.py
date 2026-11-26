@@ -48,15 +48,18 @@ query($owner: String!, $name: String!) {{
 }}
 """
 
-OWNER_SPRINTS = f"""
-query($login: String!, $after: String) {{
-  repositoryOwner(login: $login) {{
-    repositories(first: 50, after: $after) {{
-      pageInfo {{ hasNextPage endCursor }}
-      nodes {{ {MILESTONES} }}
-    }}
-  }}
-}}
+OWNER_SPRINTS = """
+query($login: String!, $after: String) {
+  repositoryOwner(login: $login) {
+    repositories(first: 100, after: $after) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        nameWithOwner
+        milestones(states: OPEN, first: 20) { nodes { title } }
+      }
+    }
+  }
+}
 """
 
 SPRINT_TITLE = re.compile(r'Sprint \d+')
@@ -223,13 +226,19 @@ def sprint_rows(repos, stale_days, now):
             }
 
 
+def has_sprint(repo):
+    return any(SPRINT_TITLE.match(m['title']) for m in repo['milestones']['nodes'])
+
+
 def owner_repos(login):
     after = None
     while True:
         cursor = [] if after is None else ['-F', f'after={after}']
         query = ['-F', f'login={login}', *cursor, '-f', f'query={OWNER_SPRINTS}']
         found = json.loads(gh('api', 'graphql', *query))['data']['repositoryOwner']
-        yield from found['repositories']['nodes']
+        for repo in found['repositories']['nodes']:
+            if has_sprint(repo):
+                yield one_repo(repo['nameWithOwner'])
         if not found['repositories']['pageInfo']['hasNextPage']:
             return
         after = found['repositories']['pageInfo']['endCursor']

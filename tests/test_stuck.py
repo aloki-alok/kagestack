@@ -19,7 +19,8 @@ if args[:2] == ['repo', 'view']:
     sys.exit(0)
 after = next((a.split('=', 1)[1] for a in args if a.startswith('after=')), '')
 if any('milestones' in arg for arg in args):
-    found = here / f'sprints{{after}}.json'
+    name = next((a.split('=', 1)[1] for a in args if a.startswith('name=')), None)
+    found = here / (f'repo-{{name}}.json' if name else f'sprints{{after}}.json')
     print(found.read_text() if found.exists() else {empty!r})
     sys.exit(0)
 print((here / f'page{{after}}.json').read_text())
@@ -106,10 +107,14 @@ def write_sprints(tmp_path, *repo_pages):
                 'nodes': repos,
             }
         }
-        data = {'repository': repos[0] if repos else None, 'repositoryOwner': owner}
         (tmp_path / f'sprints{cursors[index]}.json').write_text(
-            json.dumps({'data': data})
+            json.dumps({'data': {'repositoryOwner': owner}})
         )
+        for found in repos:
+            name = found['nameWithOwner'].split('/')[1]
+            (tmp_path / f'repo-{name}.json').write_text(
+                json.dumps({'data': {'repository': found}})
+            )
 
 
 def sprint_rows(tmp_path, *sprints):
@@ -439,7 +444,10 @@ def test_org_sprints_read_every_page_of_repos(tmp_path):
     write_sprints(
         tmp_path,
         [repo('acme/shop', sprint(1, issue(2)))],
-        [repo('acme/site', sprint(1, issue(7)))],
+        [
+            repo('acme/site', sprint(1, issue(7))),
+            repo('acme/docs', sprint(2, issue(3), title='Later: someday')),
+        ],
     )
 
     result = ks_stuck(tmp_path, [], args=('--json', '--org', 'acme'))
@@ -453,6 +461,10 @@ def test_org_sprints_read_every_page_of_repos(tmp_path):
         arg for call in gh_calls(tmp_path) for arg in call if arg.startswith('login=')
     ]
     assert owners == ['login=acme', 'login=acme']
+    fetched = [
+        arg for call in gh_calls(tmp_path) for arg in call if arg.startswith('name=')
+    ]
+    assert fetched == ['name=shop', 'name=site']
 
 
 def test_the_plain_report_names_the_sprint(tmp_path):
