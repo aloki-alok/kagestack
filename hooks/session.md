@@ -15,6 +15,8 @@ Before your first action on a task, pick the kagestack playbook that matches it.
 - Making a page, doc or diagram for someone to read or decide from: `kagestack:explain`.
 - Testing whether a skill, prompt or rule change helps: `kagestack:eval`.
 - Stopping mid-task: `kagestack:handoff`.
+- A long or unattended run, before its first decision: `kagestack:decision-log`.
+- The user comes back after being away from a long run and asks what happened: `kagestack:catch-up`.
 
 Load each playbook once per task.
 
