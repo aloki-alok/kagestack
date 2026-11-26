@@ -10,6 +10,7 @@ Before your first action on a task, pick the kagestack playbook that matches it.
 - A how, why or where question about code: `kagestack:investigate`.
 - Something slow, or a speedup claim: `kagestack:perf`.
 - Opening a pull request or rewriting its description: `kagestack:pr`.
+- Stress testing a risky diff (money, auth, permissions, call dispatch, data writes, a migration), or settling two reviews that disagree: `kagestack:interrogate`.
 - Picking or keeping a dev tool or library: `kagestack:scout`.
 - Making a page, doc or diagram for someone to read or decide from: `kagestack:explain`.
 - Testing whether a skill, prompt or rule change helps: `kagestack:eval`.

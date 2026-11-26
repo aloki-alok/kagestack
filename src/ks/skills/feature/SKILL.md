@@ -31,7 +31,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/src/ks/principles.md` before step 1.
    Done when every slice is green and committed.
 8. **Prove it on the real app.** Drive the feature the way a user does. Save the output or a screenshot.
    Done when the proof comes from the final commit.
-9. **Fresh review.** An agent with none of your reasoning reviews the plan and the diff. Fix what it shows with a run.
+9. **Fresh review.** An agent with none of your reasoning reviews the plan and the diff. If the diff touches money, auth, permissions, call dispatch, data writes or a migration, run `interrogate` instead. Fix what it shows with a run.
 10. **Flag what you passed.** List bad code you saw and did not fix: file:line and the right shape, one line each. If one of them is a bug a user could hit, open an issue for it with a priority label, and link the issue in your reply.
 
 ## Reply
