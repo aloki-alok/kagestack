@@ -1,0 +1,1 @@
+{"prompt": "A few customers wrote in saying they got a past-due reminder for an invoice they had already paid. It started recently. Can you find out why and fix it?", "skill": "bug-fix", "remote": "https://github.com/acme-co/billing-notes.git", "max_turns": 80}

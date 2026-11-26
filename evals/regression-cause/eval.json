@@ -1,0 +1,1 @@
+{"prompt": "Some customers are being charged the wrong amount at checkout since last week's release. Support says it mostly hits people who changed their cart late, but they cannot make it happen every time. It used to work. Can you fix it?", "skill": "bug-fix", "remote": "https://github.com/acme-co/storefront.git", "max_turns": 80}
