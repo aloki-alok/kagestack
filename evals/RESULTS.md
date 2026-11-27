@@ -27,6 +27,8 @@ a fresh agent that never read this repo built the tasks and hidden tests. it was
 | 2026-11-26 | Sonnet 5.5 | 10 | `perf` that reverts changes inside the spread and checks the timed part vs 0.35.1 (`honest-speedup`): 3x faster 5/5 vs 5/5, same output 5/5 vs 5/5, no idle edits 5/5 vs 5/5, honest claim 4/5 vs 5/5 (the miss was the scorer's) | none | 1.1x, not shipped |
 | 2026-11-26 | Sonnet 5.5 | 10 | `handoff` with a pick-up half vs 0.35.1 (`resume-branch`): main's tests 5/5 vs 5/5, prices in cents 5/5 vs 5/5, csv right 5/5 vs 5/5 | none | 1.0x, not shipped |
 | 2026-11-26 | Sonnet 5.5 | 10 | same, the stale claim hidden behind a clean merge and green tests (`resume-branch-hard`): surcharge carried 5/5 vs 4/5 (the miss renamed the function), csv matches checkout 5/5 vs 5/5 | none | 1.0x, not shipped |
+| 2026-11-27 | Sonnet 5.5 | 20 | `ui` playbook vs 0.36.0, tasks with a sibling to copy (mobile nav, card grid): keyboard 5/5 vs 5/5, reduced motion 10/10 vs 10/10, no sideways scroll 10/10 vs 10/10, tokens 10/10 vs 10/10 | hover not stuck after tap 5/5 vs 5/5 | 2.5x, not shipped |
+| 2026-11-27 | Sonnet 5.5 | 20 | same, no sibling (demo modal, Monthly/Yearly switch): focus trap 5/5 vs 5/5, keyboard and state 5/5 vs 5/5, tokens 10/10 vs 10/10 | reduced motion 8/10 vs 10/10, indicator aligned after resize 5/5 vs 5/5 | 2.5x to 3.7x, not shipped |
 
 what changed after each:
 - the first one found `bug-fix` changed the bad-input error in 8/10 runs. the playbook now keeps what callers rely on.
@@ -41,6 +43,7 @@ what changed after each:
 - the tenth tied on every outcome: sonnet already picks the likely job and keeps scope on these asks. 8 of 10 runs read "see how we can reuse" as asking for advice, not a build. a retest needs real past asks that agents got wrong.
 - the eleventh and twelfth shipped `garden` on its unnamed-mistake win. "the old code here is bad" went to `refactor` in all 10 runs, and none read the history, so that wording is not garden's yet.
 - the last five tested lessons from pstack, the Cursor skill pack, and all tied: sonnet already found the real cause, reverted idle tweaks and caught the stale note in 50 of 50 runs on both sides. none shipped. a retest needs a cause that history and grep can't reach, such as one only a failing end-to-end run shows.
+- the `ui` rows tied: sonnet already used the project's tokens, gated hover, built a native `<dialog>` and a radio switch, and looked at the page in 39 of 40 runs. the playbook's extra polish added price motion that ignored reduced motion in 2 of 5 runs. its patterns stay in the author's personal rules. a retest needs an outcome code can see that sonnet misses, such as motion that runs under reduced motion or a first-paint slide.
 
 ## author-built evals
 
