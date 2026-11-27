@@ -9,6 +9,7 @@ Before your first action on a task, pick the kagestack playbook that matches it.
 - Removing comments or lint suppressions, or `ks check` failed on them: `kagestack:clear-comments`.
 - A how, why or where question about code: `kagestack:investigate`.
 - Something slow, or a speedup claim: `kagestack:perf`.
+- Building, changing or animating a page, a component or a screen: `kagestack:ui`.
 - Opening a pull request or rewriting its description: `kagestack:pr`.
 - Stress testing a risky diff (money, auth, permissions, call dispatch, data writes, a migration), or settling two reviews that disagree: `kagestack:interrogate`.
 - Picking or keeping a dev tool or library: `kagestack:scout`.
