@@ -6,12 +6,21 @@ flowchart TD
   D --> E["Nov 24: reviewer finds rebuilt code, handoff, garden"]
   E --> F["Nov 25: agents queue the merge and wait in the background"]
   F --> G["Nov 26: ks check reads yaml, css and shell comments, ks stuck says why a pull request waits, big features run as sprints"]
-  G --> H["Nov 26: risky diffs get reviewers on two models, long runs keep a decision log"]:::check
+  G --> H["Nov 26: risky diffs get reviewers on two models, long runs keep a decision log"]
+  H --> I["Nov 28: ks check sends back swallowed errors, any and deep nesting, ks pr-watch waits on a pull request, TypeScript and Python rules"]:::check
 ```
 
 # Changes, release by release
 
 kagestack changes almost every day, and I kept losing track of why. So each release here says what you or an agent saw before it, what changed, why, and the test behind it. The ideas that tied in a blind test are here too, marked as not shipped, because a failed idea is still worth remembering.
+
+## 0.37.0 · Nov 28 · Less slop gets in, and watching a pull request costs nothing while it waits
+
+- **Before:** Agent code kept adding empty catches, `any` and ifs nested four deep, and a reviewer asked for each by hand. Getting a red pull request green meant polling `gh` turn after turn and pasting whole CI logs. No playbook said how to type TypeScript or Python.
+- **After:** `ks check` sends back a new swallowed error (`except: pass`, an empty `catch`, `.catch(() => {})`), a TypeScript `any`, and a block nested 4 deep. `ks pr-watch` waits on one pull request in the background and exits at its next event with only what needs doing: a conflict, each new review comment once, or a failed run's first error and summary. The `pr` playbook watches to merge with it and checks each review comment against the code before acting. `typescript` and `python` rule tables load when an agent edits those files.
+- **Why:** Alok compared kagestack against pstack, Matt Pocock's skills and Superpowers. These were the gaps none of them filled well, or filled only as text that tied in past tests.
+- **Proof:** On the last 30 days of omni-dashboard-new, the new check rules would have flagged 16 swallowed errors and 3 deep blocks. The `babysit` eval answered review comments 5/5 vs 0/5 against 0.36.0, at $0.14 vs $0.09 a run. On a real failed kage run the watch printed 994 bytes against 84,934 bytes of failed-step log. A blind eval of the language rules: TypeScript narrow catches 5/5 vs 0/5, exhaustive unions 5/5 vs 0/5, Python with no `Any` 5/5 vs 0/5.
+- **Not shipped:** `deslop`, a harsh audit then cleanup, kept behavior 10/10 on both sides and left less slop (26 vs 34 median) but won no fact by 4 of 5 in two blind rounds. Test-first edits to `feature` tied 5/5 vs 5/5 on every fact over 20 runs. `verify`, a per-repo skill that drives the real app, could not be evaluated, because headless Claude Code refuses writes under `.claude/skills/` on both sides.
 
 ## 0.36.0 · Nov 26 · Risky diffs get reviewers on two models
 
