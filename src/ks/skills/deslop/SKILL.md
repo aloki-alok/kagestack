@@ -23,4 +23,4 @@ Structure changes. Behavior does not. A bug or a missing feature you find goes t
 
 ## Reply
 
-One to three lines: what got smaller, with the before and after counts, and the proof. Then each rejected finding and each behavior change the reviewer found, one line each.
+One to three lines and nothing else: what got smaller, with the before and after counts, and the proof. Rejected findings and behavior changes the reviewer found go in the last commit's message. The reply says how many there are.
