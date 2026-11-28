@@ -47,8 +47,10 @@ SWALLOWED_PYTHON = (
 )
 SWALLOWED_JS = (
     r'rule: {any: [{kind: catch_clause, has: {field: body, regex: "^\\{\\s*\\}$"}},'
-    r' {kind: call_expression,'
-    r' regex: "\\.catch\\(\\s*(\\(\\s*\\w*\\s*\\)|\\w+)\\s*=>\\s*\\{\\s*\\}\\s*\\)$"}]}'
+    r' {kind: call_expression, all: [{has: {field: function, kind: member_expression,'
+    r' has: {field: property, regex: "^catch$"}}}, {has: {field: arguments,'
+    r' has: {any: [{kind: arrow_function}, {kind: function_expression}],'
+    r' has: {field: body, regex: "^(\\{\\s*\\}|undefined|null)$"}}}}]}]}'
 )
 ANY_TYPE = (
     'rule: {kind: predefined_type, regex: "^any$",'

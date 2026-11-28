@@ -957,3 +957,24 @@ def test_line_added_inside_an_old_deep_block_passes(repo):
     result = ks_check(repo)
 
     assert result.returncode == 0, result.stdout
+
+
+def test_every_form_of_an_empty_catch_handler_fails(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'load.ts': (
+                'p.catch(function () {})\np.catch(async () => {})\n'
+                'p.catch((e: Error) => {})\np.catch(function noop() {})\n'
+                'p.catch(() => undefined)\np.catch((e) => report(e))\n'
+                'p.catch(report)\np.then(() => {})\n'
+            ),
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert '5 swallowed errors' in result.stdout
+    assert 'report' not in result.stdout
+    assert 'then' not in result.stdout
