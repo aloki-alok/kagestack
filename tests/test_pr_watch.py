@@ -13,6 +13,8 @@ import json, sys
 from pathlib import Path
 here = Path(__file__).parent
 args = sys.argv[1:]
+with (here / 'calls.jsonl').open('a') as calls:
+    calls.write(json.dumps(args) + '\\n')
 polls = here / 'polls'
 count = int(polls.read_text()) if polls.exists() else 0
 if args[:2] == ['pr', 'view']:
@@ -29,7 +31,7 @@ elif args[:2] == ['api', 'graphql']:
     threads = [
         {{'id': t['thread'], 'isResolved': t.get('resolved', False),
           'comments': {{'nodes': [{{'databaseId': t['id'], 'body': t['body'],
-                                   'author': {{'login': t['user']}},
+                                   'author': t['user'] and {{'login': t['user']}},
                                    'path': t['path'], 'line': t['line']}}]}}}}
         for t in state.get('threads', [])
     ]
@@ -38,6 +40,9 @@ elif args[:2] == ['api', 'graphql']:
 elif args[:2] == ['run', 'view']:
     with (here / 'logs.jsonl').open('a') as logs:
         logs.write(json.dumps(args) + '\\n')
+    if state['log'] is None:
+        print('failed to get run log: log not found', file=sys.stderr)
+        sys.exit(1)
     print(state['log'])
 else:
     print('unexpected: ' + ' '.join(args), file=sys.stderr)
@@ -74,7 +79,8 @@ def thread(number, body='this crashes on zero'):
 
 
 class FakeGithub:
-    def __init__(self, root):
+    def __init__(self, root, git=True):
+        self.cache = root / 'cache'
         self.bin = root / 'bin'
         self.bin.mkdir()
         gh = self.bin / 'gh'
@@ -82,14 +88,23 @@ class FakeGithub:
         gh.chmod(0o755)
         self.repo = root / 'repo'
         self.repo.mkdir()
-        subprocess.run(['git', 'init', '-q'], cwd=self.repo, check=True)
+        if git:
+            subprocess.run(['git', 'init', '-q'], cwd=self.repo, check=True)
 
     def serve(self, *states):
         (self.bin / 'states.json').write_text(json.dumps(list(states)))
         (self.bin / 'polls').unlink(missing_ok=True)
 
+    def calls(self):
+        lines = (self.bin / 'calls.jsonl').read_text().splitlines()
+        return [json.loads(line) for line in lines]
+
     def watch(self, *args):
-        env = {**os.environ, 'PATH': f'{self.bin}{os.pathsep}{os.environ["PATH"]}'}
+        env = {
+            **os.environ,
+            'PATH': f'{self.bin}{os.pathsep}{os.environ["PATH"]}',
+            'XDG_CACHE_HOME': str(self.cache),
+        }
         return subprocess.run(
             [KS, 'pr-watch', '12', '--interval', '0', *args],
             cwd=self.repo,
@@ -239,3 +254,82 @@ def test_failed_log_shows_the_first_error_and_the_summary(github):
     assert '217 passed, 2 failed' in result.stdout
     assert 'step 199' not in result.stdout
     assert len(result.stdout.splitlines()) < 45
+
+
+def test_checks_and_logs_come_from_the_pull_requests_own_repo(github):
+    github.serve({'pr': pr(), 'checks': [check('fail')], 'log': 'boom'})
+
+    github.watch()
+
+    for call in github.calls():
+        if call[:2] in (['pr', 'checks'], ['run', 'view']):
+            assert call[-2:] == ['-R', 'acme/shop'], call
+
+
+def test_comment_from_a_deleted_account_is_still_reported(github):
+    github.serve({'pr': pr(), 'checks': [], 'threads': [{**thread(901), 'user': None}]})
+
+    result = github.watch()
+
+    assert result.returncode == 1
+    assert 'ghost on shipping.py:7 (comment 901)' in result.stdout
+
+
+def test_outdated_comment_names_its_file(github):
+    github.serve({'pr': pr(), 'checks': [], 'threads': [{**thread(901), 'line': None}]})
+
+    result = github.watch()
+
+    assert 'reviewer on shipping.py, outdated (comment 901)' in result.stdout
+
+
+def test_expired_log_still_names_the_failed_check(github):
+    github.serve({'pr': pr(), 'checks': [check('fail')], 'log': None})
+
+    result = github.watch()
+
+    assert result.returncode == 1
+    assert result.stdout.splitlines()[:2] == [
+        'failed: test',
+        f'log not available: {RUN}',
+    ]
+
+
+def test_seen_comments_are_remembered_outside_a_git_checkout(tmp_path):
+    github = FakeGithub(tmp_path, git=False)
+    state = {'pr': pr(), 'checks': [check('pending')], 'threads': [thread(901)]}
+    github.serve(state)
+    first = github.watch()
+    github.serve(state)
+
+    second = github.watch('--timeout', '0')
+
+    assert first.returncode == 1
+    assert second.returncode == 3
+
+
+@pytest.mark.parametrize(
+    ('merge', 'says'),
+    [
+        ('BEHIND', 'checks green, branch is behind main'),
+        ('DRAFT', 'checks green, still a draft'),
+    ],
+)
+def test_green_checks_say_what_still_blocks_the_merge(github, merge, says):
+    github.serve({'pr': pr(merge=merge), 'checks': [check('pass')]})
+
+    result = github.watch()
+
+    assert result.stdout.splitlines()[0] == says
+
+
+def test_unknown_merge_state_is_polled_again(github):
+    github.serve(
+        {'pr': pr(merge='UNKNOWN'), 'checks': [check('pass')]},
+        {'pr': pr(merge='CLEAN'), 'checks': [check('pass')]},
+    )
+
+    result = github.watch()
+
+    assert result.stdout.splitlines()[0] == 'checks green, ready to merge'
+    assert polls(github) == 2

@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import subprocess
 import sys
@@ -36,6 +37,14 @@ FAILURE = re.compile(
 )
 COMMENT_CHARACTERS = 300
 READY, NEEDS_WORK, ERROR, STILL_WAITING = 0, 1, 2, 3
+GREEN_BUT = {
+    'CLEAN': 'ready to merge',
+    'HAS_HOOKS': 'ready to merge',
+    'UNSTABLE': 'ready to merge',
+    'BEHIND': 'branch is behind {base}',
+    'DRAFT': 'still a draft',
+    'UNKNOWN': None,
+}
 
 
 class Thread(NamedTuple):
@@ -59,18 +68,25 @@ def gh(*args):
     return found.stdout
 
 
+def repo_of(pull):
+    return '/'.join(pull['url'].split('/')[3:5])
+
+
 def thread_line(node):
     last = node['comments']['nodes'][-1]
     body = ' '.join(last['body'].split())[:COMMENT_CHARACTERS]
-    where = f'{last["path"]}:{last["line"]}'
-    line = (
-        f'{last["author"]["login"]} on {where} (comment {last["databaseId"]}): {body}'
+    who = last['author']['login'] if last['author'] else 'ghost'
+    where = (
+        f'{last["path"]}:{last["line"]}'
+        if last['line']
+        else f'{last["path"]}, outdated'
     )
+    line = f'{who} on {where} (comment {last["databaseId"]}): {body}'
     return Thread(node['id'], last['databaseId'], line)
 
 
 def open_threads(pull):
-    owner, name = pull['url'].split('/')[3:5]
+    owner, name = repo_of(pull).split('/')
     found = json.loads(
         gh(
             'api',
@@ -91,7 +107,15 @@ def open_threads(pull):
 
 def checks_of(pull):
     try:
-        found = gh('pr', 'checks', str(pull['number']), '--json', 'name,bucket,link')
+        found = gh(
+            'pr',
+            'checks',
+            str(pull['number']),
+            '--json',
+            'name,bucket,link',
+            '-R',
+            repo_of(pull),
+        )
     except subprocess.CalledProcessError as failure:
         if NO_CHECKS_YET in failure.stderr:
             return []
@@ -113,16 +137,22 @@ def digest(log):
     return [*block, '...', *summary] if summary else block
 
 
-def failed_logs(checks):
+def run_log(run, link, repo):
+    try:
+        log = gh('run', 'view', run, '--log-failed', '-R', repo)
+    except subprocess.CalledProcessError:
+        return [f'log not available: {link}']
+    return digest([LOG_PREFIX.sub('', line) for line in log.splitlines()])
+
+
+def failed_logs(checks, repo):
+    runs = {}
+    for check in checks:
+        if found := RUN_ID.search(check['link'] or ''):
+            runs.setdefault(found[1], check['link'])
     lines = []
-    for run in dict.fromkeys(
-        found[1] for check in checks if (found := RUN_ID.search(check['link'] or ''))
-    ):
-        log = [
-            LOG_PREFIX.sub('', line)
-            for line in gh('run', 'view', run, '--log-failed').splitlines()
-        ]
-        lines += digest(log)
+    for run, link in runs.items():
+        lines += run_log(run, link, repo)
     links = [
         check['link'] for check in checks if not RUN_ID.search(check['link'] or '')
     ]
@@ -146,40 +176,28 @@ def event(found, seen):
     broken = [check for check in found.checks if check['bucket'] in BROKEN_BUCKETS]
     if broken:
         names = ', '.join(check['name'] for check in broken)
-        return NEEDS_WORK, [f'failed: {names}', *failed_logs(broken)]
-    if found.checks and all(c['bucket'] in DONE_BUCKETS for c in found.checks):
-        ready = pull['mergeStateStatus'] in ('CLEAN', 'HAS_HOOKS', 'UNSTABLE')
-        return READY, [
-            'checks green, ready to merge'
-            if ready
-            else 'checks green, waiting on review'
-        ]
-    return None
-
-
-def seen_file(number):
-    found = subprocess.run(
-        ['git', 'rev-parse', '--path-format=absolute', '--git-path', 'ks-pr-watch'],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if found.returncode:
+        return NEEDS_WORK, [f'failed: {names}', *failed_logs(broken, repo_of(pull))]
+    green = found.checks and all(c['bucket'] in DONE_BUCKETS for c in found.checks)
+    blocker = GREEN_BUT.get(pull['mergeStateStatus'], 'waiting on review')
+    if not green or blocker is None:
         return None
-    return Path(found.stdout.strip(), f'{number}.json')
+    return READY, [f'checks green, {blocker.format(base=pull["baseRefName"])}']
+
+
+def seen_file(pull):
+    cache = os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache'
+    name = f'{repo_of(pull).replace("/", "-")}-{pull["number"]}.json'
+    return Path(cache, 'kagestack', 'pr-watch', name)
 
 
 def read_seen(path):
-    if path and path.exists():
-        return json.loads(path.read_text())
-    return {}
+    return json.loads(path.read_text()) if path.exists() else {}
 
 
 def remember(path, threads, seen):
-    if path:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        latest = {thread.id: thread.comment for thread in threads}
-        path.write_text(json.dumps({**seen, **latest}))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    latest = {thread.id: thread.comment for thread in threads}
+    path.write_text(json.dumps({**seen, **latest}))
 
 
 def waiting_on(found):
@@ -202,7 +220,7 @@ def pr_watch(args):
     deadline = time.monotonic() + args.timeout
     try:
         found = snapshot(number)
-        path = seen_file(found.pull['number'])
+        path = seen_file(found.pull)
         seen = read_seen(path)
         while not (result := event(found, seen)) and time.monotonic() < deadline:
             time.sleep(args.interval)
