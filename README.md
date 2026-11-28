@@ -62,10 +62,13 @@ writes the playbooks to `.agents/skills`, where codex and opencode find them. `k
 
 fails on comments in python, js, jsx, ts, tsx, yaml, css and shell scripts, docstrings included. tool directives that name their rule pass, like `noqa: F401`, `type: ignore[assignment]`, `eslint-disable-next-line no-undef`, `oxlint-disable-next-line no-console`, `@ts-expect-error`, `shellcheck disable=SC2086` and `stylelint-disable-next-line color-no-hex`. a bare `noqa`, `type: ignore`, `pyright: ignore`, `eslint-disable`, `oxlint-disable`, `@ts-ignore` or `@ts-nocheck` fails, because it silences the checks that catch real bugs too.
 
-it also fails on two kinds of new mess:
+it also fails on five kinds of new mess:
 
 - a skipped or focused test: `@pytest.mark.skip`, `unittest.skip`, `it.skip(...)`, `it.only(...)`, `xit(...)` and the like. a conditional skip like `skipif` passes. fix the test or the code, or delete a test that no longer applies.
 - a function this change pushes past 60 lines. a function that was already longer can still change or move to another file, so a small fix in old code is not blocked. a `describe` block counts as a list of tests, not a function.
+- a swallowed error: `except: ...` with no type, `except X: pass`, an empty `catch {}`, or `.catch(() => {})`. catch the error you expect and handle it, or give the handler a name that says why it is safe to drop.
+- an `any` type in typescript. `any` inside a generic constraint, like `T extends (...args: any[]) => unknown`, passes.
+- a block nested 4 deep inside one function: `if`, loops, `try`, `with`, `match` and `switch` count. an `else if` chain counts as one level, and a function inside starts again at zero. adding a line inside an old deep block passes.
 
 it checks only lines your branch added since it left main, so an old repo can start today. a comment you moved or kept on a changed line is not new. minified files (a line over 10,000 characters) are skipped. `--all` checks every line, `--base <ref>` picks the starting point.
 
