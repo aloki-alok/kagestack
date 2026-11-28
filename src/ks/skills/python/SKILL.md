@@ -13,8 +13,8 @@ Make the type checker reject bad states, so a reader trusts the types instead of
 | Signatures are typed | Every parameter and return of a function you write or change. `-> None` too. |
 | Outside data is parsed where it enters | Requests, webhooks, env, config, JSON and DB rows become a frozen `dataclass`, a pydantic model or a `TypedDict` at the boundary. Inside, pass the type, not a `dict`. |
 | `Any` stops at the boundary | The parse function may take `Any` or `object`. Nothing after it returns `Any`. |
-| States are enums or literals | `Literal['queued', 'sent']` or an `Enum`, not loose strings. End a `match` on them with `case _: assert_never(value)`. |
-| Ids can't be swapped | `OrderId = NewType('OrderId', str)` when two ids share a type. |
+| States are enums, literals or a union of classes | `Literal['queued', 'sent']`, an `Enum`, or `Opened | Closed` dataclasses, not loose strings. End every `match` on one with `case _: assert_never(value)`, so a new state fails the type check. |
+| Ids can't be swapped | `OrderId = NewType('OrderId', str)` when two ids share a type. `OrderId(x)` checks nothing, so call it only inside the parse that checked `x`. |
 | Catch the error you expect | Never a bare `except:` or `except Exception: pass`, which `ks check` sends back. Re-raise with `raise ... from error` when you translate one. |
 | No mutable defaults | `items: list[str] | None = None`, then build the list inside. |
 | Seams are protocols | A `Protocol` for what a test double must provide, not a base class. |

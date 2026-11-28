@@ -15,7 +15,7 @@ Make the compiler reject bad states, so a reader trusts the types instead of re-
 | Casts only after a check | `as` hides bugs. Narrow with a discriminant, `in`, `typeof` or a type guard that really checks. A guard that lies is worse than `as`. Use `satisfies` to check a literal without widening it. |
 | States are unions | Give each variant a literal `kind` or `status`. No bag of optional fields where some combinations are impossible. |
 | Every variant handled | End a `switch` on a union with `const unhandled: never = value`, so a new variant fails the build. |
-| Ids can't be swapped | Two `string` ids that mean different things get brands (`string & { readonly brand: 'OrderId' }`), made only by a parse or guard. |
+| Ids can't be swapped | Two `string` ids that mean different things get brands (`string & { readonly brand: 'OrderId' }`). The `as OrderId` inside the parse that checked the value is the only cast allowed to make one. |
 | Derive before declaring | `Pick`, `Omit`, `ReturnType`, `Awaited`, `typeof` and schema types before a new interface that drifts. |
 | No `!` | Narrow instead. A non-null assertion is a cast. |
 | Object arguments | Three or more parameters, or any boolean flag, go in one object, so a call reads like what it means. |
