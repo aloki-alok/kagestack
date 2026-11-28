@@ -30,6 +30,7 @@ a fresh agent that never read this repo built the tasks and hidden tests. it was
 | 2026-11-27 | Sonnet 5.5 | 20 | `ui` playbook vs 0.36.0, tasks with a sibling to copy (mobile nav, card grid): keyboard 5/5 vs 5/5, reduced motion 10/10 vs 10/10, no sideways scroll 10/10 vs 10/10, tokens 10/10 vs 10/10 | hover not stuck after tap 5/5 vs 5/5 | 2.2 to 2.6x, not shipped |
 | 2026-11-27 | Sonnet 5.5 | 20 | same, no sibling (demo modal, Monthly/Yearly switch): focus trap 5/5 vs 5/5, keyboard and state 5/5 vs 5/5, fits a phone 5/5 vs 5/5, tokens 10/10 vs 10/10 | reduced motion on the modal 5/5 vs 5/5 and on the switch 3/5 vs 5/5, indicator aligned after resize 5/5 vs 5/5 | 2.1 to 3.7x, not shipped |
 | 2026-11-28 | Sonnet 5.5 | 10 | `pr` that watches to merge with `ks pr-watch` vs main (`babysit`, author-built): checks pass at the pushed head 5/5 vs 5/5, fixed the code and kept the test 5/5 vs 5/5, never merged 5/5 vs 5/5, wrong finding ignored 5/5 vs 5/5 | answered the review comments 5/5 vs 0/5 | 1.6x ($0.14 vs $0.09 median), shipped |
+| 2026-11-28 | Sonnet 5.5 | 20 | `typescript` and `python` rules vs no kagestack (blind, webhook handlers in a ledger and a helpdesk): works 10/10 vs 10/10, type check 10/10 vs 10/10, typed signatures 10/10 vs 10/10 | TS narrow catch 5/5 vs 0/5, TS exhaustive union 5/5 vs 0/5, Python no `Any` 5/5 vs 0/5, Python exhaustive match 0/5 vs 0/5 | 1.4 to 1.6x, shipped |
 
 what changed after each:
 - the first one found `bug-fix` changed the bad-input error in 8/10 runs. the playbook now keeps what callers rely on.
@@ -62,3 +63,4 @@ written by the plugin's author, so read them as regression checks. 5 runs per si
 
 `pr` and `handoff` were fixed after reading these runs, so they still need a second task. rerun a row with `python3 evals/run.py <folder>`.
 - the `babysit` row shipped on answered review comments, 5/5 vs 0/5. the higher cost is the replies themselves. the eval's CI answers at once, so it can't show the waiting `ks pr-watch` saves. on a real kage failure the digest was 994 bytes against 84,934 bytes of failed-step log. 3 of 5 runs first started the watch in the foreground, so the playbook now says `run_in_background: true`.
+- the language rows shipped on narrow catches and exhaustive unions in TypeScript and no `Any` in Python. `ks check` sends back none of these. python runs modeled events as a dataclass union and still matched without `assert_never` in 5 of 5, so the python rule needs a case for unions of classes. a retest needs a new task.

@@ -12,6 +12,7 @@ Before your first action on a task, pick the kagestack playbook that matches it.
 - Opening a pull request, rewriting its description, or getting one green and merged: `kagestack:pr`.
 - Stress testing a risky diff (money, auth, permissions, call dispatch, data writes, a migration), or settling two reviews that disagree: `kagestack:interrogate`.
 - Picking or keeping a dev tool or library: `kagestack:scout`.
+- Writing or editing TypeScript: `kagestack:typescript`. Python: `kagestack:python`. Load them beside the job's playbook.
 - Making a page, doc or diagram for someone to read or decide from: `kagestack:explain`.
 - Testing whether a skill, prompt or rule change helps: `kagestack:eval`.
 - Stopping mid-task: `kagestack:handoff`.
