@@ -7,6 +7,8 @@ SLEEP_LOOP_WORDS = [
     re.compile(rf'\b{word}\b') for word in ('(for|while|until)', 'do', 'sleep', 'done')
 ]
 
+PR_WATCH = re.compile(r'\bks[ \t]+pr-watch\b')
+
 COMMAND_BREAK = re.compile(r'[;&|(){}`\n]')
 
 WATCH_COMMAND = re.compile(
@@ -75,7 +77,11 @@ def waits(command):
     script = without_heredoc_bodies(command)
     code = code_only(script)
     commands = COMMAND_BREAK.split(code)
-    if sleeps_in_a_loop(code) or any(map(WATCH_COMMAND.match, commands)):
+    if (
+        sleeps_in_a_loop(code)
+        or any(map(WATCH_COMMAND.match, commands))
+        or any(map(PR_WATCH.search, commands))
+    ):
         return True
     return any(waits(''.join(inner)) for inner in SHELL_STRING.findall(script))
 
@@ -83,7 +89,8 @@ def waits(command):
 BACKGROUND = (
     'This command waits in the foreground and blocks the session. Run it again '
     'with run_in_background: true and keep working until the notification '
-    'arrives. For a GitHub Actions run, background `gh run watch <run-id> '
+    'arrives. For a pull request, background `ks pr-watch <number>`. For a '
+    'GitHub Actions run, background `gh run watch <run-id> '
     '--exit-status`. To wait for any other condition, use the Monitor tool '
     'with an until-loop.'
 )

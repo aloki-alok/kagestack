@@ -164,3 +164,10 @@ def test_plain_command_mentioning_sleep_runs():
 
 def test_switch_turns_the_check_off():
     assert run(POLL_LOOP, env={'KS_WAIT': '0'}) == ''
+
+
+def test_foreground_pr_watch_is_sent_back():
+    assert denied(run('ks pr-watch 12'))
+    assert denied(run('uv run --quiet --project "$ROOT" ks pr-watch 12'))
+    assert run('git commit -m "feat: add ks pr-watch"') == ''
+    assert run('ks pr-watch 12', background=True) == ''
