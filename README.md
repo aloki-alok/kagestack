@@ -96,6 +96,25 @@ a conflict, a red check or a requested change goes to an agent. a missing approv
 
 a sprint is a milestone named `Sprint N: <outcome>`, and the `feature` playbook opens one for work bigger than one pull request. sprints run in number order, so the lowest open one is current and later ones wait their turn. the current sprint hands its most urgent issue with no pull request to an agent. a sprint with every issue closed waits for a person to check the deploy and close it. a title like `Phone sprint 2` is its own series.
 
+## ks pr-watch
+
+`ks pr-watch` waits on one pull request and exits at its next event, printing only what needs doing:
+
+```
+ks pr-watch 12
+```
+
+| it prints | exit |
+|---|---|
+| `conflict: rebase <branch> on <base>` | 1 |
+| `new review comments: N`, then one line each: who, file:line, comment id, text | 1 |
+| `failed: <checks>`, then the first error block and the closing summary of each failed run's log | 1 |
+| `checks green, ready to merge` or `checks green, waiting on review` | 0 |
+| `merged: <url>` or `closed: <url>` | 0 |
+| `still waiting on: <checks>` after `--timeout` (30 minutes) | 3 |
+
+it reports each review comment once, so starting it again after a reply waits for the next event. an agent runs it in the background, so waiting costs no tokens. the plugin sends a foreground run to the background.
+
 ## ks tools
 
 names older tools in a repo and the faster, maintained option for each, like eslint → oxlint or pip → uv. the list is dated. the `scout` playbook rechecks it.

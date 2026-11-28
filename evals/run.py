@@ -16,7 +16,14 @@ from pathlib import Path
 EVALS = Path(__file__).resolve().parent
 REPO = EVALS.parent
 SERVER_FILES = ('issues.json', 'org-template.md', 'pr.json', 'comments.json')
-PLUGIN_FILES = ('.claude-plugin', 'hooks', 'src/ks/skills', 'src/ks/principles.md')
+PLUGIN_FILES = (
+    '.claude-plugin',
+    'hooks',
+    'src',
+    'pyproject.toml',
+    'uv.lock',
+    'README.md',
+)
 TOOLS = [
     'Bash(git:*)',
     'Bash(gh:*)',
@@ -142,16 +149,25 @@ def plugin_at(ref, workdir):
         for name in PLUGIN_FILES:
             (dest / name).parent.mkdir(parents=True, exist_ok=True)
             copy = shutil.copytree if (REPO / name).is_dir() else shutil.copy
-            copy(REPO / name, dest / name)
-        return dest
-    archive = subprocess.run(
-        ['git', 'archive', ref],
-        cwd=REPO,
-        check=True,
-        capture_output=True,
+            copy(REPO / name, dest / name, **ignore_caches(REPO / name))
+    else:
+        archive = subprocess.run(
+            ['git', 'archive', ref],
+            cwd=REPO,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(['tar', '-x', '-C', dest], input=archive.stdout, check=True)
+    subprocess.run(
+        ['uv', 'sync', '-q', '--frozen', '--no-dev', '--project', dest], check=True
     )
-    subprocess.run(['tar', '-x', '-C', dest], input=archive.stdout, check=True)
     return dest
+
+
+def ignore_caches(path):
+    if path.is_dir():
+        return {'ignore': shutil.ignore_patterns('__pycache__', '*.egg-info')}
+    return {}
 
 
 def build(eval_dir, spec, root):
