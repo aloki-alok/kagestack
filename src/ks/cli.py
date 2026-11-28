@@ -7,6 +7,9 @@ from ks.check import check, ci
 from ks.doctor import doctor
 from ks.githook import git_hook
 from ks.package import package
+from ks.prwatch import SUMMARY as PR_WATCH_SUMMARY
+from ks.prwatch import add_arguments as add_pr_watch_arguments
+from ks.prwatch import pr_watch
 from ks.screens import add_arguments as add_screen_arguments
 from ks.screens import screens
 from ks.setup import ManifestError, setup
@@ -68,6 +71,7 @@ def main():
         'write the playbooks to .agents/skills for codex and opencode',
     ).add_argument('--check', action='store_true', help='fail if they are stale')
     add_stuck_arguments(command('stuck', stuck, STUCK_SUMMARY))
+    add_pr_watch_arguments(command('pr-watch', pr_watch, PR_WATCH_SUMMARY))
     command('tools', tools, 'name faster, maintained replacements for old dev tools')
     add_screen_arguments(
         command(
