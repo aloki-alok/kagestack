@@ -218,3 +218,24 @@ def test_one_log_read_per_failed_run(github):
     assert result.stdout.splitlines()[0] == 'failed: test, types'
     assert len(logs) == 1
     assert json.loads(logs[0])[:4] == ['run', 'view', '4242', '--log-failed']
+
+
+def test_failed_log_shows_the_first_error_and_the_summary(github):
+    setup = [f'test\tinstall\t2026-11-28T10:00:00.0Z step {n}' for n in range(200)]
+    error = [
+        'test\tRun tests\t2026-11-28T10:01:00.0Z not ok 1 - tokens replace the old ones',
+        "test\tRun tests\t2026-11-28T10:01:00.0Z   name: 'AssertionError'",
+        'test\tRun tests\t2026-11-28T10:01:00.0Z   expected: 0',
+    ]
+    noise = [f'test\tRun tests\t2026-11-28T10:01:01.0Z ok {n}' for n in range(300)]
+    summary = ['test\tRun tests\t2026-11-28T10:02:00.0Z 217 passed, 2 failed']
+    log = '\n'.join(setup + error + noise + summary)
+    github.serve({'pr': pr(), 'checks': [check('fail')], 'log': log})
+
+    result = github.watch()
+
+    assert 'not ok 1 - tokens replace the old ones' in result.stdout
+    assert 'expected: 0' in result.stdout
+    assert '217 passed, 2 failed' in result.stdout
+    assert 'step 199' not in result.stdout
+    assert len(result.stdout.splitlines()) < 45

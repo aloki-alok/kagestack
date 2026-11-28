@@ -108,7 +108,7 @@ ks pr-watch 12
 |---|---|
 | `conflict: rebase <branch> on <base>` | 1 |
 | `new review comments: N`, then one line each: who, file:line, comment id, text | 1 |
-| `failed: <checks>`, then the last 30 lines of each failed run's log | 1 |
+| `failed: <checks>`, then the first error block and the closing summary of each failed run's log | 1 |
 | `checks green, ready to merge` or `checks green, waiting on review` | 0 |
 | `merged: <url>` or `closed: <url>` | 0 |
 | `still waiting on: <checks>` after `--timeout` (30 minutes) | 3 |

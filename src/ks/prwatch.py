@@ -28,6 +28,12 @@ RUN_ID = re.compile(r'/actions/runs/(\d+)')
 LOG_PREFIX = re.compile(r'^[^\t]*\t[^\t]*\t(\d{4}-\d\d-\d\dT[\d:.]+Z )?')
 NO_CHECKS_YET = 'no checks reported'
 LOG_LINES = 30
+FIRST_ERROR_LINES = 20
+SUMMARY_LINES = 8
+FAILURE = re.compile(
+    r'(^|\s)(not ok\b|FAIL\b|FAILED\b|--- FAIL|Traceback|panicked'
+    r'|\w*Error\b|error[:\[]|✕|✗|●)'
+)
 COMMENT_CHARACTERS = 300
 READY, NEEDS_WORK, ERROR, STILL_WAITING = 0, 1, 2, 3
 
@@ -98,13 +104,25 @@ def snapshot(number):
     return Snapshot(pull, checks_of(pull), open_threads(pull))
 
 
-def log_tail(checks):
+def digest(log):
+    first = next((n for n, line in enumerate(log) if FAILURE.search(line)), None)
+    if first is None:
+        return log[-LOG_LINES:]
+    block = log[first : first + FIRST_ERROR_LINES]
+    summary = log[max(first + FIRST_ERROR_LINES, len(log) - SUMMARY_LINES) :]
+    return [*block, '...', *summary] if summary else block
+
+
+def failed_logs(checks):
     lines = []
     for run in dict.fromkeys(
         found[1] for check in checks if (found := RUN_ID.search(check['link'] or ''))
     ):
-        log = gh('run', 'view', run, '--log-failed').splitlines()
-        lines += [LOG_PREFIX.sub('', line) for line in log[-LOG_LINES:]]
+        log = [
+            LOG_PREFIX.sub('', line)
+            for line in gh('run', 'view', run, '--log-failed').splitlines()
+        ]
+        lines += digest(log)
     links = [
         check['link'] for check in checks if not RUN_ID.search(check['link'] or '')
     ]
@@ -128,7 +146,7 @@ def event(found, seen):
     broken = [check for check in found.checks if check['bucket'] in BROKEN_BUCKETS]
     if broken:
         names = ', '.join(check['name'] for check in broken)
-        return NEEDS_WORK, [f'failed: {names}', *log_tail(broken)]
+        return NEEDS_WORK, [f'failed: {names}', *failed_logs(broken)]
     if found.checks and all(c['bucket'] in DONE_BUCKETS for c in found.checks):
         ready = pull['mergeStateStatus'] in ('CLEAN', 'HAS_HOOKS', 'UNSTABLE')
         return READY, [
