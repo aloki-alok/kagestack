@@ -11,6 +11,7 @@
   "license": "MIT",
   "skills": "./src/ks/skills/",
   "agents": [
-    "./src/ks/agents/comment-reviewer.md"
+    "./src/ks/agents/comment-reviewer.md",
+    "./src/ks/agents/deslop-reviewer.md"
   ]
 }

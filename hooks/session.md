@@ -7,6 +7,7 @@ Before your first action on a task, pick the kagestack playbook that matches it.
 - A cleanup, restructure, rename or dead-code removal: `kagestack:refactor`.
 - A sweep of a repo's history for mistakes that keep coming back, with no single bug open: `kagestack:garden`.
 - Removing comments or lint suppressions, or `ks check` failed on them: `kagestack:clear-comments`.
+- Stripping agent slop (comments, swallowed errors, untyped data, deep nesting, needless layers) without changing behavior, or a harsh cleanup review: `kagestack:deslop`.
 - A how, why or where question about code: `kagestack:investigate`.
 - Something slow, or a speedup claim: `kagestack:perf`.
 - Opening a pull request or rewriting its description: `kagestack:pr`.
