@@ -395,7 +395,10 @@ def test_comment_like_strings_pass(repo):
     result = ks_check(repo, '--all')
 
     assert result.returncode == 0, result.stdout
-    assert result.stdout == 'no new comments, skipped tests or long functions\n'
+    assert result.stdout == (
+        'no new comments, skipped tests, long functions, swallowed errors,'
+        ' any types or deep nesting\n'
+    )
 
 
 def test_paths_limit_the_check_to_those_files(feature_branch):
@@ -797,3 +800,160 @@ def test_skipped_each_table_fails(feature_branch):
     result = ks_check(feature_branch)
 
     assert 'a.test.ts:1: it.skip.each' in result.stdout
+
+
+def test_new_swallowed_error_fails(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'jobs.py': (
+                'def a():\n    try:\n        run()\n    except ValueError:\n'
+                '        pass\n\n\ndef b():\n    try:\n        run()\n'
+                '    except:\n        retry()\n'
+            ),
+            'jobs.ts': (
+                'export function a() {\n  try {\n    run()\n  } catch (e) {}\n}\n'
+                'export const b = () => load().catch(() => {})\n'
+            ),
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'jobs.py:4: except ValueError:' in result.stdout
+    assert 'jobs.py:11: except:' in result.stdout
+    assert 'jobs.ts:4: catch (e) {}' in result.stdout
+    assert 'jobs.ts:6: load().catch(() => {})' in result.stdout
+    assert '4 swallowed errors' in result.stdout
+
+
+def test_handled_error_passes(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'jobs.py': (
+                'def a():\n    try:\n        run()\n    except ValueError as error:\n'
+                '        log(error)\n        raise\n'
+            ),
+            'jobs.ts': (
+                'export function a() {\n  try {\n    run()\n  } catch (error) {\n'
+                '    report(error)\n    throw error\n  }\n}\n'
+            ),
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_old_swallowed_error_passes(repo):
+    commit(repo, {'jobs.py': 'try:\n    run()\nexcept OSError:\n    pass\n'})
+    git(repo, 'checkout', '-b', 'feature')
+    commit(repo, {'jobs.py': 'try:\n    run()\nexcept OSError:\n    pass\nx = 1\n'})
+
+    result = ks_check(repo)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_new_any_type_fails(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'api.ts': (
+                'export function parse(body: any): Record<string, any> {\n'
+                '  return body as any\n}\n'
+            ),
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'api.ts:1: any' in result.stdout
+    assert 'api.ts:2: any' in result.stdout
+    assert '3 any types' in result.stdout
+
+
+def test_any_in_a_generic_constraint_passes(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'wrap.ts': (
+                'export function wrap<T extends (...args: any[]) => unknown>(f: T): T {\n'
+                '  return f\n}\n'
+            ),
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_new_deep_nesting_fails_once_per_block(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'sync.py': (
+                'def sync(rows):\n    for row in rows:\n        if row.ok:\n'
+                '            if row.new:\n                with lock:\n'
+                '                    if row.big:\n                        save(row)\n'
+            ),
+            'sync.ts': (
+                'export function sync(rows) {\n  for (const row of rows) {\n'
+                '    if (row.ok) {\n      while (row.next) {\n'
+                '        try {\n          save(row)\n        } finally {\n'
+                '          row.next = null\n        }\n      }\n    }\n  }\n}\n'
+            ),
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 1
+    assert 'sync.py:5: with lock:' in result.stdout
+    assert 'sync.py:6:' not in result.stdout
+    assert 'sync.ts:5: try {' in result.stdout
+    assert '2 blocks nested 4 deep' in result.stdout
+
+
+def test_else_if_chain_and_inner_function_are_not_nesting(feature_branch):
+    commit(
+        feature_branch,
+        {
+            'route.ts': (
+                'export function route(a) {\n  if (a === 1) {\n    one()\n'
+                '  } else if (a === 2) {\n    two()\n  } else if (a === 3) {\n'
+                '    three()\n  } else if (a === 4) {\n    if (ready) {\n'
+                '      four()\n    }\n  }\n}\n'
+            ),
+            'route.py': (
+                'def route(rows):\n    for row in rows:\n        if row.ok:\n'
+                '            def inner(cell):\n                for part in cell:\n'
+                '                    if part:\n                        use(part)\n'
+                '            inner(row)\n'
+            ),
+        },
+    )
+
+    result = ks_check(feature_branch)
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_line_added_inside_an_old_deep_block_passes(repo):
+    deep = (
+        'def sync(rows):\n    for row in rows:\n        if row.ok:\n'
+        '            if row.new:\n                if row.big:\n'
+        '                    save(row)\n'
+    )
+    commit(repo, {'sync.py': deep})
+    git(repo, 'checkout', '-b', 'feature')
+    commit(repo, {'sync.py': deep + '                    log(row)\n'})
+
+    result = ks_check(repo)
+
+    assert result.returncode == 0, result.stdout

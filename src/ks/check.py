@@ -41,6 +41,42 @@ FUNCTION_RULES = (
     ('function', 'python', 'rule: {kind: function_definition}'),
     *(('function', language, JS_FUNCTION) for language in JS_LANGUAGES),
 )
+SWALLOWED_PYTHON = (
+    r'rule: {kind: except_clause, any: [{regex: "^except\\s*:"},'
+    r' {regex: "^except[^\\n]*:\\s*(pass|\\.\\.\\.)\\s*$"}]}'
+)
+SWALLOWED_JS = (
+    r'rule: {any: [{kind: catch_clause, has: {field: body, regex: "^\\{\\s*\\}$"}},'
+    r' {kind: call_expression,'
+    r' regex: "\\.catch\\(\\s*(\\(\\s*\\w*\\s*\\)|\\w+)\\s*=>\\s*\\{\\s*\\}\\s*\\)$"}]}'
+)
+ANY_TYPE = (
+    'rule: {kind: predefined_type, regex: "^any$",'
+    ' not: {inside: {kind: constraint, stopBy: end}}}'
+)
+NESTING_LIMIT = 3
+PYTHON_BLOCKS = (
+    '{any: [{kind: if_statement}, {kind: for_statement}, {kind: while_statement},'
+    ' {kind: try_statement}, {kind: with_statement}, {kind: match_statement}]}'
+)
+PYTHON_FUNCTIONS = '{any: [{kind: function_definition}, {kind: lambda}]}'
+JS_BLOCKS = (
+    '{any: [{kind: if_statement, not: {inside: {kind: else_clause}}},'
+    ' {kind: for_statement}, {kind: for_in_statement}, {kind: while_statement},'
+    ' {kind: do_statement}, {kind: try_statement}, {kind: switch_statement}]}'
+)
+JS_FUNCTIONS = (
+    '{any: [{kind: function_declaration}, {kind: function_expression},'
+    ' {kind: arrow_function}, {kind: method_definition},'
+    ' {kind: generator_function_declaration}, {kind: generator_function}]}'
+)
+
+
+def nested_past_the_limit(block, function):
+    rule = block
+    for _ in range(NESTING_LIMIT):
+        rule = f'{{all: [{block}, {{inside: {{stopBy: {function}, all: [{rule}]}}}}]}}'
+    return f'rule: {rule}'
 
 
 def as_yaml(rules):
@@ -69,6 +105,18 @@ RULES = as_yaml(
             for body in SKIPPED_JS_TESTS
         ),
         *FUNCTION_RULES,
+        ('swallowed-error', 'python', SWALLOWED_PYTHON),
+        *(('swallowed-error', language, SWALLOWED_JS) for language in JS_LANGUAGES),
+        *(('any-type', language, ANY_TYPE) for language in ('typescript', 'tsx')),
+        (
+            'nesting',
+            'python',
+            nested_past_the_limit(PYTHON_BLOCKS, PYTHON_FUNCTIONS),
+        ),
+        *(
+            ('nesting', language, nested_past_the_limit(JS_BLOCKS, JS_FUNCTIONS))
+            for language in JS_LANGUAGES
+        ),
     )
 )
 TOOL_DIRECTIVE = re.compile(
@@ -104,7 +152,16 @@ FINDINGS = {
         ' do not skip it.'
     ),
     'function': 'split it into steps whose names say what each one does.',
+    'swallowed-error': (
+        'catch only the error you expect and handle it, or let it reach someone'
+        ' who can act on it.'
+    ),
+    'any-type': (
+        'name the type. parse outside data from unknown into a type where it enters.'
+    ),
+    'nesting': 'return early, or move the inner block into a function with a name.',
 }
+NESTED_RULES = ('function', 'nesting')
 EVERY_LINE = range(1, sys.maxsize)
 DEFAULT_BASES = ('origin/HEAD', 'origin/main', 'origin/master', 'main', 'master')
 FILE_PATCH = re.compile(r'^diff --git ', re.MULTILINE)
@@ -329,7 +386,8 @@ def old_length(hit, diff, before, after):
 def is_new_finding(hit, diff, before, after):
     if hit.rule == 'function':
         return length(hit) > FUNCTION_LIMIT >= old_length(hit, diff, before, after)
-    lines = range(hit.first_line, hit.last_line + 1)
+    last = hit.first_line if hit.rule == 'nesting' else hit.last_line
+    lines = range(hit.first_line, last + 1)
     return (
         not is_directive(hit)
         and not was_moved(hit, diff.removed)
@@ -338,18 +396,18 @@ def is_new_finding(hit, diff, before, after):
 
 
 def outermost(hits):
-    functions = {}
+    spans = {}
     for hit in hits:
-        if hit.rule == 'function':
-            functions.setdefault(hit.path, []).append(hit)
+        if hit.rule in NESTED_RULES:
+            spans.setdefault((hit.path, hit.rule), []).append(hit)
     return [
         hit
         for hit in hits
-        if hit.rule != 'function'
+        if hit.rule not in NESTED_RULES
         or not any(
             other != hit
             and other.first_line <= hit.first_line <= hit.last_line <= other.last_line
-            for other in functions[hit.path]
+            for other in spans[(hit.path, hit.rule)]
         )
     ]
 
@@ -366,6 +424,12 @@ def summary(rule, hits):
         return f'{len(hits)} comments on {lines} lines'
     if rule == 'skipped-test':
         return f'{len(hits)} skipped or focused tests'
+    if rule == 'swallowed-error':
+        return f'{len(hits)} swallowed errors'
+    if rule == 'any-type':
+        return f'{len(hits)} any types'
+    if rule == 'nesting':
+        return f'{len(hits)} blocks nested {NESTING_LIMIT + 1} deep'
     return f'{len(hits)} functions over {FUNCTION_LIMIT} lines'
 
 
@@ -378,7 +442,9 @@ def report(hits):
             print(summary(rule, found))
             print(advice)
     if not hits:
-        print('no new comments, skipped tests or long functions')
+        print(
+            'no new comments, skipped tests, long functions, swallowed errors, any types or deep nesting'
+        )
     return 1 if hits else 0
 
 
